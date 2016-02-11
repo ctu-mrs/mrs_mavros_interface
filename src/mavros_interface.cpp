@@ -3,8 +3,11 @@
 #include <mutex>
 #include <tf/LinearMath/Transform.h>
 #include <nodelet/nodelet.h>
+#include <mrs_lib/Profiler.h>
+#include <std_srvs/Trigger.h>
 
-namespace mrs_mavros_interface {
+namespace mrs_mavros_interface
+{
 
 class MavrosInterface : public nodelet::Nodelet {
 
@@ -12,12 +15,21 @@ public:
   virtual void onInit();
 
 private:
-  ros::NodeHandle nh_;
-  ros::Subscriber subscriber_odometry;
-  ros::Publisher  publisher_odometry;
+  ros::NodeHandle    nh_;
+  ros::Subscriber    subscriber_odometry;
+  ros::Publisher     publisher_odometry;
 
 private:
   void callbackOdometry(const nav_msgs::OdometryConstPtr &msg);
+
+private:
+  ros::ServiceServer service_server_jump_emulation;
+  bool emulateJump(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+  double jump_offset = 0;
+
+private:
+  mrs_lib::Profiler *profiler;
+  mrs_lib::Routine * routine_odometry_callback;
 };
 
 // constructor
@@ -30,9 +42,34 @@ void MavrosInterface::onInit() {
   publisher_odometry = nh_.advertise<nav_msgs::Odometry>("odometry_out", 1);
 
   subscriber_odometry = nh_.subscribe("odometry_in", 1, &MavrosInterface::callbackOdometry, this, ros::TransportHints().tcpNoDelay());
+
+  service_server_jump_emulation = nh_.advertiseService("emulate_jump", &MavrosInterface::emulateJump, this);
+
+  // --------------------------------------------------------------
+  // |                          profiler                          |
+  // --------------------------------------------------------------
+
+  profiler                  = new mrs_lib::Profiler(nh_, "MavrosInterface");
+  routine_odometry_callback = profiler->registerRoutine("callbackOdometry");
+}
+
+bool MavrosInterface::emulateJump(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
+
+  jump_offset += 2.0;
+
+  if (jump_offset > 3) {
+    jump_offset = 10; 
+  }
+
+  res.message = "yep";
+  res.success = true;
+
+  return true;
 }
 
 void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
+
+  routine_odometry_callback->start();
 
   nav_msgs::Odometry updated_odometry = *msg;
 
@@ -47,15 +84,20 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
   // |           prepare the quaternion for the rotation          |
   // --------------------------------------------------------------
 
-  tf::Quaternion rotation(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z,
-                          msg->pose.pose.orientation.w);
+  tf::Quaternion rotation(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z, msg->pose.pose.orientation.w);
 
   // --------------------------------------------------------------
   // |                     rotate the vectors                     |
   // --------------------------------------------------------------
 
   tf::Vector3 rotated_velocity = tf::quatRotate(rotation, velocity);
-  tf::Vector3 rotated_angular = tf::quatRotate(rotation, angular);
+  tf::Vector3 rotated_angular  = tf::quatRotate(rotation, angular);
+
+  // --------------------------------------------------------------
+  // |                        emulate jump                        |
+  // --------------------------------------------------------------
+
+  updated_odometry.pose.pose.position.x += jump_offset;
 
   // --------------------------------------------------------------
   // |        update the odometry message with the new data       |
@@ -76,8 +118,9 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
   // --------------------------------------------------------------
 
   publisher_odometry.publish(updated_odometry);
-}
 
+  routine_odometry_callback->end();
+}
 }
 
 #include <pluginlib/class_list_macros.h>
