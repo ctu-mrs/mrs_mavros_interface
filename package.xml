@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package>
+  <name>mrs_mavros_interface</name>
+  <version>1.0.0</version>
+  <description>The mrs_main package</description>
+
+  <maintainer email="tomas.baca@fel.cvut.cz">Tomas Baca</maintainer>
+
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>mrs_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+
+  <run_depend>nav_msgs</run_depend>
+
+  <export>
+  </export>
+</package>
