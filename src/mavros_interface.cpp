@@ -2,11 +2,14 @@
 #include <nav_msgs/Odometry.h>
 #include <mutex>
 #include <tf/LinearMath/Transform.h>
+#include <nodelet/nodelet.h>
 
-class MavrosInterface {
+namespace mrs_mavros_interface {
+
+class MavrosInterface : public nodelet::Nodelet {
 
 public:
-  MavrosInterface();
+  virtual void onInit();
 
 private:
   ros::NodeHandle nh_;
@@ -18,9 +21,9 @@ private:
 };
 
 // constructor
-MavrosInterface::MavrosInterface() {
+void MavrosInterface::onInit() {
 
-  nh_ = ros::NodeHandle("~");
+  ros::NodeHandle nh_ = nodelet::Nodelet::getPrivateNodeHandle();
 
   ros::Time::waitForValid();
 
@@ -75,13 +78,7 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
   publisher_odometry.publish(updated_odometry);
 }
 
-int main(int argc, char **argv) {
+}
 
-  ros::init(argc, argv, "mavros_interface");
-
-  MavrosInterface mavros_interface;
-
-  ros::spin();
-
-  return 0;
-};
+#include <pluginlib/class_list_macros.h>
+PLUGINLIB_EXPORT_CLASS(mrs_mavros_interface::MavrosInterface, nodelet::Nodelet)
