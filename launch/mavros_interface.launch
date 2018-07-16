@@ -4,7 +4,7 @@
 
   <group ns="$(arg uav_name)">
 
-    <node pkg="nodelet" type="nodelet" name="mavros_interface" args="load mrs_mavros_interface/MavrosInterface standalone_nodelet" output="screen">
+    <node pkg="nodelet" type="nodelet" name="mavros_interface" args="load mrs_mavros_interface/MavrosInterface mrs_nodelet_manager" output="screen">
 
       <!-- Subscribers --> 
       <remap from="~odometry_in" to="mavros/local_position/odom" />
