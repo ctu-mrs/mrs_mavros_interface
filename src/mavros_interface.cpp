@@ -23,7 +23,7 @@ private:
 // constructor
 void MavrosInterface::onInit() {
 
-  ros::NodeHandle nh_ = nodelet::Nodelet::getPrivateNodeHandle();
+  ros::NodeHandle nh_ = nodelet::Nodelet::getMTPrivateNodeHandle();
 
   ros::Time::waitForValid();
 
