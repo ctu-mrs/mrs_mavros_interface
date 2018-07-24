@@ -27,9 +27,9 @@ void MavrosInterface::onInit() {
 
   ros::Time::waitForValid();
 
-  subscriber_odometry = nh_.subscribe("odometry_in", 1, &MavrosInterface::callbackOdometry, this, ros::TransportHints().tcpNoDelay());
-
   publisher_odometry = nh_.advertise<nav_msgs::Odometry>("odometry_out", 1);
+
+  subscriber_odometry = nh_.subscribe("odometry_in", 1, &MavrosInterface::callbackOdometry, this, ros::TransportHints().tcpNoDelay());
 }
 
 void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
