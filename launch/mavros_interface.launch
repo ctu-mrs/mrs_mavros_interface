@@ -11,6 +11,7 @@
 
       <!-- Publisher --> 
       <remap from="~odometry_out" to="~converted_mavros_odom" />
+      <remap from="~profiler" to="profiler" />
 
     </node>
 

@@ -9,12 +9,13 @@ set(CMAKE_CXX_FLAGS "-std=c++11 -fno-diagnostics-color")
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   mrs_msgs
+  mrs_lib
   nav_msgs
   nodelet
   )
 
 catkin_package(
-  CATKIN_DEPENDS nav_msgs
+  CATKIN_DEPENDS nav_msgs mrs_lib
   LIBRARIES MavrosInterface
   #  DEPENDS system_lib
   )

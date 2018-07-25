@@ -3,8 +3,10 @@
 #include <mutex>
 #include <tf/LinearMath/Transform.h>
 #include <nodelet/nodelet.h>
+#include <mrs_lib/Profiler.h>
 
-namespace mrs_mavros_interface {
+namespace mrs_mavros_interface
+{
 
 class MavrosInterface : public nodelet::Nodelet {
 
@@ -18,6 +20,10 @@ private:
 
 private:
   void callbackOdometry(const nav_msgs::OdometryConstPtr &msg);
+
+private:
+  mrs_lib::Profiler *profiler;
+  mrs_lib::Routine * routine_odometry_callback;
 };
 
 // constructor
@@ -30,9 +36,18 @@ void MavrosInterface::onInit() {
   publisher_odometry = nh_.advertise<nav_msgs::Odometry>("odometry_out", 1);
 
   subscriber_odometry = nh_.subscribe("odometry_in", 1, &MavrosInterface::callbackOdometry, this, ros::TransportHints().tcpNoDelay());
+
+  // --------------------------------------------------------------
+  // |                          profiler                          |
+  // --------------------------------------------------------------
+
+  profiler                  = new mrs_lib::Profiler(nh_, "MavrosInterface");
+  routine_odometry_callback = profiler->registerRoutine("callbackOdometry");
 }
 
 void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
+
+  routine_odometry_callback->start();
 
   nav_msgs::Odometry updated_odometry = *msg;
 
@@ -47,15 +62,14 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
   // |           prepare the quaternion for the rotation          |
   // --------------------------------------------------------------
 
-  tf::Quaternion rotation(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z,
-                          msg->pose.pose.orientation.w);
+  tf::Quaternion rotation(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z, msg->pose.pose.orientation.w);
 
   // --------------------------------------------------------------
   // |                     rotate the vectors                     |
   // --------------------------------------------------------------
 
   tf::Vector3 rotated_velocity = tf::quatRotate(rotation, velocity);
-  tf::Vector3 rotated_angular = tf::quatRotate(rotation, angular);
+  tf::Vector3 rotated_angular  = tf::quatRotate(rotation, angular);
 
   // --------------------------------------------------------------
   // |        update the odometry message with the new data       |
@@ -76,6 +90,8 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
   // --------------------------------------------------------------
 
   publisher_odometry.publish(updated_odometry);
+
+  routine_odometry_callback->end();
 }
 
 }

@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <package>
+
   <name>mrs_mavros_interface</name>
   <version>1.0.0</version>
   <description>The mrs_main package</description>
@@ -14,11 +15,14 @@
   <build_depend>roscpp</build_depend>
   <build_depend>mrs_msgs</build_depend>
   <build_depend>nav_msgs</build_depend>
+  <build_depend>mrs_lib</build_depend>
 
   <run_depend>nodelet</run_depend>
   <run_depend>nav_msgs</run_depend>
+  <run_depend>mrs_lib</run_depend>
 
   <export>
     <nodelet plugin="${prefix}/mavros_interface.xml" />
   </export>
+
 </package>
