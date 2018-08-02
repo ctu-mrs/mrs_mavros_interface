@@ -9,15 +9,20 @@
 namespace mrs_mavros_interface
 {
 
+//{ class MavrosInterface
+
 class MavrosInterface : public nodelet::Nodelet {
 
 public:
   virtual void onInit();
 
 private:
-  ros::NodeHandle    nh_;
-  ros::Subscriber    subscriber_odometry;
-  ros::Publisher     publisher_odometry;
+  ros::NodeHandle nh_;
+  bool            is_initialized = false;
+
+private:
+  ros::Subscriber subscriber_odometry;
+  ros::Publisher  publisher_odometry;
 
 private:
   void callbackOdometry(const nav_msgs::OdometryConstPtr &msg);
@@ -32,16 +37,31 @@ private:
   mrs_lib::Routine * routine_odometry_callback;
 };
 
-// constructor
+//}
+
+//{ onInit()
+
 void MavrosInterface::onInit() {
 
   ros::NodeHandle nh_ = nodelet::Nodelet::getMTPrivateNodeHandle();
 
   ros::Time::waitForValid();
 
-  publisher_odometry = nh_.advertise<nav_msgs::Odometry>("odometry_out", 1);
+  // --------------------------------------------------------------
+  // |                         subscribers                        |
+  // --------------------------------------------------------------
 
   subscriber_odometry = nh_.subscribe("odometry_in", 1, &MavrosInterface::callbackOdometry, this, ros::TransportHints().tcpNoDelay());
+
+  // --------------------------------------------------------------
+  // |                         publishers                         |
+  // --------------------------------------------------------------
+  //
+  publisher_odometry = nh_.advertise<nav_msgs::Odometry>("odometry_out", 1);
+
+  // --------------------------------------------------------------
+  // |                          services                          |
+  // --------------------------------------------------------------
 
   service_server_jump_emulation = nh_.advertiseService("emulate_jump", &MavrosInterface::emulateJump, this);
 
@@ -51,23 +71,24 @@ void MavrosInterface::onInit() {
 
   profiler                  = new mrs_lib::Profiler(nh_, "MavrosInterface");
   routine_odometry_callback = profiler->registerRoutine("callbackOdometry");
+
+  ROS_INFO("[MavrosInterface]: initialized");
+
+  is_initialized = true;
 }
 
-bool MavrosInterface::emulateJump(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
+//}
 
-  jump_offset += 2.0;
+// --------------------------------------------------------------
+// |                          callbacks                         |
+// --------------------------------------------------------------
 
-  if (jump_offset > 3) {
-    jump_offset = 10; 
-  }
-
-  res.message = "yep";
-  res.success = true;
-
-  return true;
-}
+//{ callbackOdometry()
 
 void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
+
+  if (!is_initialized)
+    return;
 
   routine_odometry_callback->start();
 
@@ -121,6 +142,26 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
 
   routine_odometry_callback->end();
 }
+
+//}
+
+//{ emulateJump()
+
+bool MavrosInterface::emulateJump(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
+
+  jump_offset += 2.0;
+
+  if (jump_offset > 3) {
+    jump_offset = 10;
+  }
+
+  res.message = "yep";
+  res.success = true;
+
+  return true;
+}
+
+//}
 }
 
 #include <pluginlib/class_list_macros.h>
