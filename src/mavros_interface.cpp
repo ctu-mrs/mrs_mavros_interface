@@ -138,7 +138,11 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
   // |                  publish the new odometry                  |
   // --------------------------------------------------------------
 
-  publisher_odometry.publish(updated_odometry);
+  try {
+    publisher_odometry.publish(nav_msgs::OdometryConstPtr(new nav_msgs::Odometry(updated_odometry)));
+  } catch (...) {
+    ROS_ERROR("Exception caught during publishing topic %s.", publisher_odometry.getTopic().c_str());
+  }
 
   routine_odometry_callback->end();
 }
