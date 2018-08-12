@@ -29,8 +29,8 @@ private:
 
 private:
   ros::ServiceServer service_server_jump_emulation;
-  bool emulateJump(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-  double jump_offset = 0;
+  bool               emulateJump(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+  double             jump_offset = 0;
 
 private:
   mrs_lib::Profiler *profiler;
@@ -140,7 +140,8 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
 
   try {
     publisher_odometry.publish(nav_msgs::OdometryConstPtr(new nav_msgs::Odometry(updated_odometry)));
-  } catch (...) {
+  }
+  catch (...) {
     ROS_ERROR("Exception caught during publishing topic %s.", publisher_odometry.getTopic().c_str());
   }
 
@@ -166,7 +167,7 @@ bool MavrosInterface::emulateJump(std_srvs::Trigger::Request &req, std_srvs::Tri
 }
 
 //}
-}
+}  // namespace mrs_mavros_interface
 
 #include <pluginlib/class_list_macros.h>
 PLUGINLIB_EXPORT_CLASS(mrs_mavros_interface::MavrosInterface, nodelet::Nodelet)
