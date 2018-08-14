@@ -1,0 +1,5 @@
+<library path="lib/libMavrosInterface">
+  <class name="mrs_mavros_interface/MavrosInterface" type="mrs_mavros_interface::MavrosInterface" base_class_type="nodelet::Nodelet">
+    <description>MavrosInterface nodelet</description>
+  </class>
+</library>
