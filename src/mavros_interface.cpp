@@ -72,9 +72,11 @@ void MavrosInterface::onInit() {
   profiler                  = new mrs_lib::Profiler(nh_, "MavrosInterface");
   routine_odometry_callback = profiler->registerRoutine("callbackOdometry");
 
-  ROS_INFO("[MavrosInterface]: initialized");
+  // | ----------------------- finish init ---------------------- |
 
   is_initialized = true;
+
+  ROS_INFO("[MavrosInterface]: initialized");
 }
 
 //}
