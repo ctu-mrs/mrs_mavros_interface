@@ -2,7 +2,9 @@
 #include <nodelet/nodelet.h>
 #include <mrs_lib/Profiler.h>
 #include <diagnostic_msgs/DiagnosticArray.h>
+#include <mavros_msgs/State.h>
 #include <mrs_msgs/MavrosDiagnostics.h>
+#include <mutex>
 
 namespace mrs_mavros_interface
 {
@@ -19,17 +21,28 @@ private:
 
 private:
   ros::Subscriber subscriber_diagnostics;
+  ros::Subscriber subscriber_mavros_state;
   ros::Publisher  publisher_diagnostics;
 
 private:
   void callbackDiagnostics(const diagnostic_msgs::DiagnosticArrayConstPtr &msg);
+  void callbackMavrosState(const mavros_msgs::StateConstPtr &msg);
 
 private:
   diagnostic_msgs::DiagnosticArray mavros_diag;
+  mrs_msgs::MavrosDiagnostics      diag;
+  std::mutex                       mutex_diag;
+
+private:
+  std::string mode;
+  int         satellites_visible, fix_type, errors_comm;
+  float       eph, epv, cpu_load, voltage, current;
+  bool        offboard, armed;
 
 private:
   mrs_lib::Profiler *profiler;
   mrs_lib::Routine * routine_diagnostics_callback;
+  mrs_lib::Routine * routine_mavros_state_callback;
 };
 
 //}
@@ -46,7 +59,8 @@ void DiagnosticsParser::onInit() {
   // |                         subscribers                        |
   // --------------------------------------------------------------
 
-  subscriber_diagnostics = nh_.subscribe("diagnostics_in", 1, &DiagnosticsParser::callbackDiagnostics, this, ros::TransportHints().tcpNoDelay());
+  subscriber_diagnostics  = nh_.subscribe("diagnostics_in", 1, &DiagnosticsParser::callbackDiagnostics, this, ros::TransportHints().tcpNoDelay());
+  subscriber_mavros_state = nh_.subscribe("mavros_state_in", 1, &DiagnosticsParser::callbackMavrosState, this, ros::TransportHints().tcpNoDelay());
 
   // --------------------------------------------------------------
   // |                         publishers                         |
@@ -58,8 +72,9 @@ void DiagnosticsParser::onInit() {
   // |                          profiler                          |
   // --------------------------------------------------------------
 
-  profiler                     = new mrs_lib::Profiler(nh_, "MavrosInterface");
-  routine_diagnostics_callback = profiler->registerRoutine("callbackDiagnostics");
+  profiler                      = new mrs_lib::Profiler(nh_, "MavrosInterface");
+  routine_diagnostics_callback  = profiler->registerRoutine("callbackDiagnostics");
+  routine_mavros_state_callback = profiler->registerRoutine("callbackMavrosState");
 
   // | ----------------------- finish init ---------------------- |
 
@@ -82,8 +97,6 @@ void DiagnosticsParser::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
 
   routine_diagnostics_callback->start();
 
-  mrs_msgs::MavrosDiagnostics diag;
-  diag.header.stamp = ros::Time::now();
 
   for (size_t i = 0; i < msg->status.size(); i++) {
 
@@ -96,22 +109,22 @@ void DiagnosticsParser::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
 
         // Satellites visible
         if (std::strcmp((msg->status[i].values[j].key).c_str(), "Satellites visible") == 0) {
-          diag.gps.satellites_visible = std::stoi(msg->status[i].values[j].value);
+          satellites_visible = std::stoi(msg->status[i].values[j].value);
         }
 
         // Fix type
         if (std::strcmp((msg->status[i].values[j].key).c_str(), "Fix type") == 0) {
-          diag.gps.fix_type = std::stoi(msg->status[i].values[j].value);
+          fix_type = std::stoi(msg->status[i].values[j].value);
         }
 
         // EPH
         if (std::strcmp((msg->status[i].values[j].key).c_str(), "EPH (m)") == 0) {
-          diag.gps.eph = std::stof(msg->status[i].values[j].value);
+          eph = std::stof(msg->status[i].values[j].value);
         }
 
         // EPV
         if (std::strcmp((msg->status[i].values[j].key).c_str(), "EPV (m)") == 0) {
-          diag.gps.epv = std::stof(msg->status[i].values[j].value);
+          epv = std::stof(msg->status[i].values[j].value);
         }
       }
     }
@@ -122,12 +135,12 @@ void DiagnosticsParser::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
 
         // CPU Load
         if (std::strcmp((msg->status[i].values[j].key).c_str(), "CPU Load (%)") == 0) {
-          diag.system.cpu_load = std::stof(msg->status[i].values[j].value);
+          cpu_load = std::stof(msg->status[i].values[j].value);
         }
 
         // Errors comm
         if (std::strcmp((msg->status[i].values[j].key).c_str(), "Errors comm") == 0) {
-          diag.system.errors_comm = std::stoi(msg->status[i].values[j].value);
+          errors_comm = std::stoi(msg->status[i].values[j].value);
         }
       }
     }
@@ -138,7 +151,12 @@ void DiagnosticsParser::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
 
         // Mode
         if (std::strcmp((msg->status[i].values[j].key).c_str(), "Mode") == 0) {
-          diag.heartbeat.mode = msg->status[i].values[j].value;
+          mode = msg->status[i].values[j].value;
+          if (std::strcmp(mode.c_str(), "OFFBOARD") == 0) {
+            offboard = true;
+          } else {
+            offboard = false;
+          }
         }
       }
     }
@@ -149,25 +167,60 @@ void DiagnosticsParser::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
 
         // Voltage
         if (std::strcmp((msg->status[i].values[j].key).c_str(), "Voltage") == 0) {
-          diag.battery.voltage = std::stof(msg->status[i].values[j].value);
+          voltage = std::stof(msg->status[i].values[j].value);
         }
 
         // Current
         if (std::strcmp((msg->status[i].values[j].key).c_str(), "Current") == 0) {
-          diag.battery.current = std::stof(msg->status[i].values[j].value);
+          current = std::stof(msg->status[i].values[j].value);
         }
       }
     }
   }
 
-  try {
-    publisher_diagnostics.publish(diag);
+
+  mutex_diag.lock();
+  {
+    diag.header.stamp           = ros::Time::now();
+    diag.gps.satellites_visible = satellites_visible;
+    diag.gps.fix_type           = fix_type;
+    diag.gps.eph                = eph;
+    diag.gps.epv                = epv;
+    diag.system.cpu_load        = cpu_load;
+    diag.system.errors_comm     = errors_comm;
+    diag.heartbeat.mode         = mode;
+    diag.battery.voltage        = voltage;
+    diag.battery.current        = current;
+    diag.state.offboard         = offboard;
+
+    try {
+      publisher_diagnostics.publish(diag);
+    }
+    catch (...) {
+      ROS_ERROR("Exception caught during publishing topic %s.", publisher_diagnostics.getTopic().c_str());
+    }
   }
-  catch (...) {
-    ROS_ERROR("Exception caught during publishing topic %s.", publisher_diagnostics.getTopic().c_str());
-  }
+  mutex_diag.unlock();
 
   routine_diagnostics_callback->end();
+}
+//}
+
+//{ callbackMavrosState()
+void DiagnosticsParser::callbackMavrosState(const mavros_msgs::StateConstPtr &msg) {
+
+  if (!is_initialized)
+    return;
+
+  routine_mavros_state_callback->start();
+
+  armed = msg->armed;
+
+  mutex_diag.lock();
+  { diag.state.armed = armed; }
+  mutex_diag.unlock();
+
+  routine_mavros_state_callback->end();
 }
 //}
 

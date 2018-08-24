@@ -8,9 +8,10 @@
 
       <!-- Subscribers --> 
       <remap from="~diagnostics_in" to="/diagnostics" />
+      <remap from="~mavros_state_in" to="mavros/state" />
 
       <!-- Publisher --> 
-      <remap from="~diagnostics_out" to="~diagnostics" />
+      <remap from="~diagnostics_out" to="mavros_interface/diagnostics" />
       <remap from="~profiler" to="profiler" />
 
     </node>
