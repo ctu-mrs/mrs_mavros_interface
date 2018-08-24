@@ -1,17 +1,25 @@
 #include <ros/ros.h>
 #include <nodelet/nodelet.h>
-#include <mrs_lib/Profiler.h>
+
 #include <diagnostic_msgs/DiagnosticArray.h>
+
 #include <mavros_msgs/State.h>
+
 #include <mrs_msgs/MavrosDiagnostics.h>
+
+#include <mrs_lib/ParamLoader.h>
+#include <mrs_lib/Profiler.h>
+
 #include <mutex>
+
+#define btoa(x) ((x) ? "true" : "false")
 
 namespace mrs_mavros_interface
 {
 
-//{ class DiagnosticsParser
+//{ class MavrosDiagnostics
 
-class DiagnosticsParser : public nodelet::Nodelet {
+class MavrosDiagnostics : public nodelet::Nodelet {
 
 public:
   virtual void onInit();
@@ -25,6 +33,11 @@ private:
   ros::Publisher  publisher_diagnostics;
 
 private:
+  int    min_satellites_visible_ = 6;
+  double min_voltage_            = 14.0;
+  double max_cpu_load_           = 90.0;
+
+private:
   void callbackDiagnostics(const diagnostic_msgs::DiagnosticArrayConstPtr &msg);
   void callbackMavrosState(const mavros_msgs::StateConstPtr &msg);
 
@@ -36,8 +49,11 @@ private:
 private:
   std::string mode;
   int         satellites_visible, fix_type, errors_comm;
+  int         last_errors_comm = 0;
   float       eph, epv, cpu_load, voltage, current;
   bool        offboard, armed;
+  bool        last_offboard = false;
+  bool        last_armed    = false;
 
 private:
   mrs_lib::Profiler *profiler;
@@ -49,18 +65,27 @@ private:
 
 //{ onInit()
 
-void DiagnosticsParser::onInit() {
+void MavrosDiagnostics::onInit() {
 
   ros::NodeHandle nh_ = nodelet::Nodelet::getMTPrivateNodeHandle();
 
   ros::Time::waitForValid();
 
   // --------------------------------------------------------------
+  // |                         parameters                         |
+  // --------------------------------------------------------------
+
+  mrs_lib::ParamLoader param_loader(nh_, "MavrosDiagnostics");
+  param_loader.load_param("min_satellites_visible", min_satellites_visible_);
+  param_loader.load_param("min_voltage", min_voltage_);
+  param_loader.load_param("max_cpu_load", max_cpu_load_);
+
+  // --------------------------------------------------------------
   // |                         subscribers                        |
   // --------------------------------------------------------------
 
-  subscriber_diagnostics  = nh_.subscribe("diagnostics_in", 1, &DiagnosticsParser::callbackDiagnostics, this, ros::TransportHints().tcpNoDelay());
-  subscriber_mavros_state = nh_.subscribe("mavros_state_in", 1, &DiagnosticsParser::callbackMavrosState, this, ros::TransportHints().tcpNoDelay());
+  subscriber_diagnostics  = nh_.subscribe("diagnostics_in", 1, &MavrosDiagnostics::callbackDiagnostics, this, ros::TransportHints().tcpNoDelay());
+  subscriber_mavros_state = nh_.subscribe("mavros_state_in", 1, &MavrosDiagnostics::callbackMavrosState, this, ros::TransportHints().tcpNoDelay());
 
   // --------------------------------------------------------------
   // |                         publishers                         |
@@ -80,7 +105,7 @@ void DiagnosticsParser::onInit() {
 
   is_initialized = true;
 
-  ROS_INFO("[DiagnosticsParser]: initialized");
+  ROS_INFO("[MavrosDiagnostics]: initialized");
 }
 
 //}
@@ -90,7 +115,7 @@ void DiagnosticsParser::onInit() {
 // --------------------------------------------------------------
 
 //{ callbackDiagnostics()
-void DiagnosticsParser::callbackDiagnostics(const diagnostic_msgs::DiagnosticArrayConstPtr &msg) {
+void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArrayConstPtr &msg) {
 
   if (!is_initialized)
     return;
@@ -178,6 +203,32 @@ void DiagnosticsParser::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
     }
   }
 
+  if (satellites_visible < min_satellites_visible_) {
+    ROS_WARN("[MavrosDiagnostics]: Low number of satellites visible: %d", satellites_visible);
+  }
+
+  if (cpu_load > max_cpu_load_) {
+    ROS_WARN("[MavrosDiagnostics]: High PixHawk CPU load: %f %%", cpu_load);
+  }
+
+  if (errors_comm > last_errors_comm) {
+    last_errors_comm = errors_comm;
+    ROS_WARN("[MavrosDiagnostics]: Communication errors detected: %d", errors_comm);
+  }
+
+  if (voltage < min_voltage_) {
+    ROS_WARN("[MavrosDiagnostics]: Low battery voltage: %f V", voltage);
+  }
+
+  if (offboard != last_offboard) {
+    last_offboard = offboard;
+    ROS_WARN("[MavrosDiagnostics]: Offboard: %s", btoa(offboard));
+  }
+
+  if (armed != last_armed) {
+    last_armed = armed;
+    ROS_WARN("[MavrosDiagnostics]: Armed: %s", btoa(armed));
+  }
 
   mutex_diag.lock();
   {
@@ -207,7 +258,7 @@ void DiagnosticsParser::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
 //}
 
 //{ callbackMavrosState()
-void DiagnosticsParser::callbackMavrosState(const mavros_msgs::StateConstPtr &msg) {
+void MavrosDiagnostics::callbackMavrosState(const mavros_msgs::StateConstPtr &msg) {
 
   if (!is_initialized)
     return;
@@ -227,4 +278,4 @@ void DiagnosticsParser::callbackMavrosState(const mavros_msgs::StateConstPtr &ms
 }  // namespace mrs_mavros_interface
 
 #include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(mrs_mavros_interface::DiagnosticsParser, nodelet::Nodelet)
+PLUGINLIB_EXPORT_CLASS(mrs_mavros_interface::MavrosDiagnostics, nodelet::Nodelet)

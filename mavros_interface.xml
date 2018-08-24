@@ -4,8 +4,8 @@
   </class>
 </library>
 
-<library path="lib/libDiagnosticsParser">
-  <class name="mrs_mavros_interface/DiagnosticsParser" type="mrs_mavros_interface::DiagnosticsParser" base_class_type="nodelet::Nodelet">
-    <description>DiagnosticsParser nodelet</description>
+<library path="lib/libMavrosDiagnostics">
+  <class name="mrs_mavros_interface/MavrosDiagnostics" type="mrs_mavros_interface::MavrosDiagnostics" base_class_type="nodelet::Nodelet">
+    <description>MavrosDiagnostics nodelet</description>
   </class>
 </library>
