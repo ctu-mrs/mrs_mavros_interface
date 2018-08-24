@@ -3,3 +3,9 @@
     <description>MavrosInterface nodelet</description>
   </class>
 </library>
+
+<library path="lib/libDiagnosticsParser">
+  <class name="mrs_mavros_interface/DiagnosticsParser" type="mrs_mavros_interface::DiagnosticsParser" base_class_type="nodelet::Nodelet">
+    <description>DiagnosticsParser nodelet</description>
+  </class>
+</library>

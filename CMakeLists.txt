@@ -16,7 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 catkin_package(
   CATKIN_DEPENDS nav_msgs mrs_lib
-  LIBRARIES MavrosInterface
+  LIBRARIES MavrosInterface DiagnosticsParser
   #  DEPENDS system_lib
   )
 
@@ -42,5 +42,17 @@ add_dependencies(MavrosInterface
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(MavrosInterface
+  ${catkin_LIBRARIES}
+  )
+
+add_library(DiagnosticsParser src/diagnostics_parser.cpp)
+
+add_dependencies(DiagnosticsParser
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS}
+  )
+
+## Specify libraries to link a library or executable target against
+target_link_libraries(DiagnosticsParser
   ${catkin_LIBRARIES}
   )
