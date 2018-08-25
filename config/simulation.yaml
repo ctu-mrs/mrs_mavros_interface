@@ -1,0 +1,3 @@
+min_satellites_visible: 6
+min_voltage: 14.0
+max_cpu_load: 90.0

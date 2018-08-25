@@ -33,6 +33,8 @@ private:
   double             jump_offset = 0;
 
 private:
+
+private:
   mrs_lib::Profiler *profiler;
   mrs_lib::Routine * routine_odometry_callback;
 };
@@ -51,13 +53,13 @@ void MavrosInterface::onInit() {
   // |                         subscribers                        |
   // --------------------------------------------------------------
 
-  subscriber_odometry = nh_.subscribe("odometry_in", 1, &MavrosInterface::callbackOdometry, this, ros::TransportHints().tcpNoDelay());
+  subscriber_odometry    = nh_.subscribe("odometry_in", 1, &MavrosInterface::callbackOdometry, this, ros::TransportHints().tcpNoDelay());
 
   // --------------------------------------------------------------
   // |                         publishers                         |
   // --------------------------------------------------------------
   //
-  publisher_odometry = nh_.advertise<nav_msgs::Odometry>("odometry_out", 1);
+  publisher_odometry    = nh_.advertise<nav_msgs::Odometry>("odometry_out", 1);
 
   // --------------------------------------------------------------
   // |                          services                          |
@@ -69,8 +71,8 @@ void MavrosInterface::onInit() {
   // |                          profiler                          |
   // --------------------------------------------------------------
 
-  profiler                  = new mrs_lib::Profiler(nh_, "MavrosInterface");
-  routine_odometry_callback = profiler->registerRoutine("callbackOdometry");
+  profiler                     = new mrs_lib::Profiler(nh_, "MavrosInterface");
+  routine_odometry_callback    = profiler->registerRoutine("callbackOdometry");
 
   // | ----------------------- finish init ---------------------- |
 
