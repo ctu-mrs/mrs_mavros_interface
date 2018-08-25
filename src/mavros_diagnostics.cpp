@@ -6,6 +6,7 @@
 #include <mavros_msgs/State.h>
 
 #include <mrs_msgs/MavrosDiagnostics.h>
+#include <mrs_msgs/Vec1.h>
 
 #include <mrs_lib/ParamLoader.h>
 #include <mrs_lib/Profiler.h>
@@ -30,7 +31,10 @@ private:
 private:
   ros::Subscriber subscriber_diagnostics;
   ros::Subscriber subscriber_mavros_state;
-  ros::Publisher  publisher_diagnostics;
+
+  ros::Publisher publisher_diagnostics;
+
+  ros::ServiceServer service_sim_satellites;
 
 private:
   int    min_satellites_visible_ = 6;
@@ -40,6 +44,8 @@ private:
 private:
   void callbackDiagnostics(const diagnostic_msgs::DiagnosticArrayConstPtr &msg);
   void callbackMavrosState(const mavros_msgs::StateConstPtr &msg);
+
+  bool callbackSimSatellites(mrs_msgs::Vec1::Request &req, mrs_msgs::Vec1::Response &res);
 
 private:
   diagnostic_msgs::DiagnosticArray mavros_diag;
@@ -52,8 +58,12 @@ private:
   int         last_errors_comm = 0;
   float       eph, epv, cpu_load, voltage, current;
   bool        offboard, armed;
-  bool        last_offboard = false;
-  bool        last_armed    = false;
+  bool        last_offboard  = false;
+  bool        last_armed     = false;
+  bool        sim_satellites = false;
+
+private:
+  std::mutex mutex_satellites_visible;
 
 private:
   mrs_lib::Profiler *profiler;
@@ -92,6 +102,13 @@ void MavrosDiagnostics::onInit() {
   // --------------------------------------------------------------
 
   publisher_diagnostics = nh_.advertise<mrs_msgs::MavrosDiagnostics>("diagnostics_out", 1);
+
+  // --------------------------------------------------------------
+  // |                          services                          |
+  // --------------------------------------------------------------
+
+  // subscribe for simulating different number of satellites
+  service_sim_satellites = nh_.advertiseService("simulate_satellites_visible_in", &MavrosDiagnostics::callbackSimSatellites, this);
 
   // --------------------------------------------------------------
   // |                          profiler                          |
@@ -134,22 +151,48 @@ void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
 
         // Satellites visible
         if (std::strcmp((msg->status[i].values[j].key).c_str(), "Satellites visible") == 0) {
-          satellites_visible = std::stoi(msg->status[i].values[j].value);
+          if (!sim_satellites) {
+            try {
+              satellites_visible = std::stoi(msg->status[i].values[j].value);
+            }
+            catch (...) {
+              satellites_visible = 0;
+              ROS_ERROR_ONCE("[MavrosDiagnostics]: Invalid Satellites visible value: %s. Setting to 0;", msg->status[i].values[j].value.c_str());
+            }
+          }
         }
 
         // Fix type
         if (std::strcmp((msg->status[i].values[j].key).c_str(), "Fix type") == 0) {
-          fix_type = std::stoi(msg->status[i].values[j].value);
+          try {
+            fix_type = std::stoi(msg->status[i].values[j].value);
+          }
+          catch (...) {
+            fix_type = 0;
+            ROS_ERROR_ONCE("[MavrosDiagnostics]: Invalid Fix type value: %s. Setting to 0;", msg->status[i].values[j].value.c_str());
+          }
         }
 
         // EPH
         if (std::strcmp((msg->status[i].values[j].key).c_str(), "EPH (m)") == 0) {
-          eph = std::stof(msg->status[i].values[j].value);
+          try {
+            eph = std::stof(msg->status[i].values[j].value);
+          }
+          catch (...) {
+            eph = 0.0;
+            ROS_ERROR_ONCE("[MavrosDiagnostics]: Invalid EPH value: %s. Setting to 0.0;", msg->status[i].values[j].value.c_str());
+          }
         }
 
         // EPV
         if (std::strcmp((msg->status[i].values[j].key).c_str(), "EPV (m)") == 0) {
-          epv = std::stof(msg->status[i].values[j].value);
+          try {
+            epv = std::stof(msg->status[i].values[j].value);
+          }
+          catch (...) {
+            epv = 0.0;
+            ROS_ERROR_ONCE("[MavrosDiagnostics]: Invalid EPV value: %s. Setting to 0.0;", msg->status[i].values[j].value.c_str());
+          }
         }
       }
     }
@@ -160,12 +203,24 @@ void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
 
         // CPU Load
         if (std::strcmp((msg->status[i].values[j].key).c_str(), "CPU Load (%)") == 0) {
-          cpu_load = std::stof(msg->status[i].values[j].value);
+          try {
+            cpu_load = std::stof(msg->status[i].values[j].value);
+          }
+          catch (...) {
+            cpu_load = 0.0;
+            ROS_ERROR_ONCE("[MavrosDiagnostics]: Invalid CPU Load value: %s. Setting to 0.0;", msg->status[i].values[j].value.c_str());
+          }
         }
 
         // Errors comm
         if (std::strcmp((msg->status[i].values[j].key).c_str(), "Errors comm") == 0) {
-          errors_comm = std::stoi(msg->status[i].values[j].value);
+          try {
+            errors_comm = std::stoi(msg->status[i].values[j].value);
+          }
+          catch (...) {
+            errors_comm = 0;
+            ROS_ERROR_ONCE("[MavrosDiagnostics]: Invalid Errors comm value: %s. Setting to 0;", msg->status[i].values[j].value.c_str());
+          }
         }
       }
     }
@@ -192,12 +247,24 @@ void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
 
         // Voltage
         if (std::strcmp((msg->status[i].values[j].key).c_str(), "Voltage") == 0) {
-          voltage = std::stof(msg->status[i].values[j].value);
+          try {
+            voltage = std::stof(msg->status[i].values[j].value);
+          }
+          catch (...) {
+            voltage = 0.0;
+            ROS_ERROR_ONCE("[MavrosDiagnostics]: Invalid Voltage value: %s. Setting to 0.0;", msg->status[i].values[j].value.c_str());
+          }
         }
 
         // Current
         if (std::strcmp((msg->status[i].values[j].key).c_str(), "Current") == 0) {
-          current = std::stof(msg->status[i].values[j].value);
+          try {
+            current = std::stof(msg->status[i].values[j].value);
+          }
+          catch (...) {
+            current = 0.0;
+            ROS_ERROR_ONCE("[MavrosDiagnostics]: Invalid Current value: %s. Setting to 0.0;", msg->status[i].values[j].value.c_str());
+          }
         }
       }
     }
@@ -272,6 +339,26 @@ void MavrosDiagnostics::callbackMavrosState(const mavros_msgs::StateConstPtr &ms
   mutex_diag.unlock();
 
   routine_mavros_state_callback->end();
+}
+//}
+
+//{ callbackSimSatellites()
+bool MavrosDiagnostics::callbackSimSatellites(mrs_msgs::Vec1::Request &req, mrs_msgs::Vec1::Response &res) {
+  if (req.goal < 0) {
+    sim_satellites = false;
+  } else {
+    mutex_satellites_visible.lock();
+    {
+      sim_satellites     = true;
+      satellites_visible = (int)req.goal;
+    }
+    mutex_satellites_visible.unlock();
+  }
+
+  res.success = true;
+  res.message = std::string("Successfully set visible satellites to: ") + std::to_string((int)req.goal);
+
+  return true;
 }
 //}
 
