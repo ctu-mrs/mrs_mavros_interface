@@ -23,6 +23,7 @@
 
   <export>
     <nodelet plugin="${prefix}/mavros_interface.xml" />
+    <nodelet plugin="${prefix}/mavros_diagnostics.xml" />
   </export>
 
 </package>
