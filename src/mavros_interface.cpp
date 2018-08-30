@@ -28,11 +28,6 @@ private:
   void callbackOdometry(const nav_msgs::OdometryConstPtr &msg);
 
 private:
-  ros::ServiceServer service_server_jump_emulation;
-  bool               emulateJump(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-  double             jump_offset = 0;
-
-private:
 
 private:
   mrs_lib::Profiler *profiler;
@@ -60,12 +55,6 @@ void MavrosInterface::onInit() {
   // --------------------------------------------------------------
   //
   publisher_odometry    = nh_.advertise<nav_msgs::Odometry>("odometry_out", 1);
-
-  // --------------------------------------------------------------
-  // |                          services                          |
-  // --------------------------------------------------------------
-
-  service_server_jump_emulation = nh_.advertiseService("emulate_jump", &MavrosInterface::emulateJump, this);
 
   // --------------------------------------------------------------
   // |                          profiler                          |
@@ -119,12 +108,6 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
   tf::Vector3 rotated_angular  = tf::quatRotate(rotation, angular);
 
   // --------------------------------------------------------------
-  // |                        emulate jump                        |
-  // --------------------------------------------------------------
-
-  updated_odometry.pose.pose.position.x += jump_offset;
-
-  // --------------------------------------------------------------
   // |        update the odometry message with the new data       |
   // --------------------------------------------------------------
 
@@ -153,24 +136,7 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
 }
 
 //}
-
-//{ emulateJump()
-
-bool MavrosInterface::emulateJump(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
-
-  jump_offset += 2.0;
-
-  if (jump_offset > 3) {
-    jump_offset = 10;
-  }
-
-  res.message = "yep";
-  res.success = true;
-
-  return true;
-}
-
-//}
+//
 }  // namespace mrs_mavros_interface
 
 #include <pluginlib/class_list_macros.h>

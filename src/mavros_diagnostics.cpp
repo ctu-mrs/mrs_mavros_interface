@@ -9,6 +9,7 @@
 #include <mrs_msgs/Vec1.h>
 
 #include <mrs_lib/ParamLoader.h>
+
 #include <mrs_lib/Profiler.h>
 
 #include <mutex>
@@ -131,6 +132,8 @@ void MavrosDiagnostics::onInit() {
 // |                          callbacks                         |
 // --------------------------------------------------------------
 
+// | --------------------- topic callbacks -------------------- |
+
 //{ callbackDiagnostics()
 void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArrayConstPtr &msg) {
 
@@ -138,7 +141,6 @@ void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
     return;
 
   routine_diagnostics_callback->start();
-
 
   for (size_t i = 0; i < msg->status.size(); i++) {
 
@@ -342,11 +344,15 @@ void MavrosDiagnostics::callbackMavrosState(const mavros_msgs::StateConstPtr &ms
 }
 //}
 
+// | -------------------- service callbacks ------------------- |
+
 //{ callbackSimSatellites()
 bool MavrosDiagnostics::callbackSimSatellites(mrs_msgs::Vec1::Request &req, mrs_msgs::Vec1::Response &res) {
+
   if (req.goal < 0) {
     sim_satellites = false;
   } else {
+
     mutex_satellites_visible.lock();
     {
       sim_satellites     = true;
