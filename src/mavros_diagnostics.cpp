@@ -68,6 +68,7 @@ private:
 
 private:
   mrs_lib::Profiler *profiler;
+  bool profiler_enabled_ = false;
   mrs_lib::Routine * routine_diagnostics_callback;
   mrs_lib::Routine * routine_mavros_state_callback;
 };
@@ -87,6 +88,9 @@ void MavrosDiagnostics::onInit() {
   // --------------------------------------------------------------
 
   mrs_lib::ParamLoader param_loader(nh_, "MavrosDiagnostics");
+
+  param_loader.load_param("enable_profiler", profiler_enabled_);
+
   param_loader.load_param("min_satellites_visible", min_satellites_visible_);
   param_loader.load_param("min_voltage", min_voltage_);
   param_loader.load_param("max_cpu_load", max_cpu_load_);
@@ -115,11 +119,15 @@ void MavrosDiagnostics::onInit() {
   // |                          profiler                          |
   // --------------------------------------------------------------
 
-  profiler                      = new mrs_lib::Profiler(nh_, "MavrosInterface");
+  profiler                      = new mrs_lib::Profiler(nh_, "MavrosInterface", profiler_enabled_);
   routine_diagnostics_callback  = profiler->registerRoutine("callbackDiagnostics");
   routine_mavros_state_callback = profiler->registerRoutine("callbackMavrosState");
 
   // | ----------------------- finish init ---------------------- |
+
+  if (!param_loader.loaded_successfully()) {
+    ros::shutdown(); 
+  }
 
   is_initialized = true;
 

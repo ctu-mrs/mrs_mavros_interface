@@ -3,7 +3,10 @@
 #include <mutex>
 #include <tf/LinearMath/Transform.h>
 #include <nodelet/nodelet.h>
+
 #include <mrs_lib/Profiler.h>
+#include <mrs_lib/ParamLoader.h>
+
 #include <std_srvs/Trigger.h>
 
 namespace mrs_mavros_interface
@@ -31,6 +34,7 @@ private:
 
 private:
   mrs_lib::Profiler *profiler;
+  bool profiler_enabled_ = false;
   mrs_lib::Routine * routine_odometry_callback;
 };
 
@@ -43,6 +47,12 @@ void MavrosInterface::onInit() {
   ros::NodeHandle nh_ = nodelet::Nodelet::getMTPrivateNodeHandle();
 
   ros::Time::waitForValid();
+
+  mrs_lib::ParamLoader param_loader(nh_, "MavrosInterface");
+
+  /* nh_.getParam("profiler", profiler_enabled_); */
+  /* ROS_INFO("[MavrosInterface]: profiler_enabled_: %d", profiler_enabled_); */
+  param_loader.load_param("enable_profiler", profiler_enabled_);
 
   // --------------------------------------------------------------
   // |                         subscribers                        |
@@ -60,10 +70,14 @@ void MavrosInterface::onInit() {
   // |                          profiler                          |
   // --------------------------------------------------------------
 
-  profiler                     = new mrs_lib::Profiler(nh_, "MavrosInterface");
+  profiler                     = new mrs_lib::Profiler(nh_, "MavrosInterface", profiler_enabled_);
   routine_odometry_callback    = profiler->registerRoutine("callbackOdometry");
 
   // | ----------------------- finish init ---------------------- |
+
+  if (!param_loader.loaded_successfully()) {
+    ros::shutdown(); 
+  }
 
   is_initialized = true;
 
