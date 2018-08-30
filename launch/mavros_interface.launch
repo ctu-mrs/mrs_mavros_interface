@@ -1,10 +1,13 @@
 <launch>
 
   <arg name="uav_name" default="$(optenv UAV_NAME uav)"/>
+  <arg name="profiler" default="$(optenv PROFILER false)" />
 
   <group ns="$(arg uav_name)">
 
     <node pkg="nodelet" type="nodelet" name="mavros_interface" args="load mrs_mavros_interface/MavrosInterface $(arg uav_name)_nodelet_manager" output="screen">
+
+      <param name="enable_profiler" type="bool" value="$(arg profiler)" />
 
       <!-- Subscribers --> 
       <remap from="~odometry_in" to="mavros/local_position/odom" />
