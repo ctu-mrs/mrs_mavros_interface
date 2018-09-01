@@ -145,7 +145,7 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
 }
 
 //}
-//
+
 }  // namespace mrs_mavros_interface
 
 #include <pluginlib/class_list_macros.h>
