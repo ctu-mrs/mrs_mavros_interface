@@ -73,6 +73,7 @@ void MavrosInterface::onInit() {
   // | ----------------------- finish init ---------------------- |
 
   if (!param_loader.loaded_successfully()) {
+    ROS_ERROR("[MavrosInterface]: Could not load all parameters!");
     ros::shutdown();
   }
 

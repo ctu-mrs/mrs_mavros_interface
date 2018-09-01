@@ -122,6 +122,7 @@ void MavrosDiagnostics::onInit() {
   // | ----------------------- finish init ---------------------- |
 
   if (!param_loader.loaded_successfully()) {
+    ROS_ERROR("[MavrosDiagnostics]: Could not load all parameters!");
     ros::shutdown();
   }
 
