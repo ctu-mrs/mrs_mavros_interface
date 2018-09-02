@@ -56,7 +56,7 @@ void MavrosInterface::onInit() {
   // |                         subscribers                        |
   // --------------------------------------------------------------
 
-  subscriber_odometry = nh_.subscribe("odometry_in", 1, &MavrosInterface::callbackOdometry, this, ros::TransportHints().udp());
+  subscriber_odometry = nh_.subscribe("odometry_in", 1, &MavrosInterface::callbackOdometry, this, ros::TransportHints().tcpNoDelay());
 
   // --------------------------------------------------------------
   // |                         publishers                         |
