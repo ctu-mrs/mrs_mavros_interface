@@ -68,9 +68,7 @@ private:
 
 private:
   mrs_lib::Profiler *profiler;
-  bool profiler_enabled_ = false;
-  mrs_lib::Routine * routine_diagnostics_callback;
-  mrs_lib::Routine * routine_mavros_state_callback;
+  bool               profiler_enabled_ = false;
 };
 
 //}
@@ -119,14 +117,13 @@ void MavrosDiagnostics::onInit() {
   // |                          profiler                          |
   // --------------------------------------------------------------
 
-  profiler                      = new mrs_lib::Profiler(nh_, "MavrosInterface", profiler_enabled_);
-  routine_diagnostics_callback  = profiler->registerRoutine("callbackDiagnostics");
-  routine_mavros_state_callback = profiler->registerRoutine("callbackMavrosState");
+  profiler = new mrs_lib::Profiler(nh_, "MavrosInterface", profiler_enabled_);
 
   // | ----------------------- finish init ---------------------- |
 
   if (!param_loader.loaded_successfully()) {
-    ros::shutdown(); 
+    ROS_ERROR("[MavrosDiagnostics]: Could not load all parameters!");
+    ros::shutdown();
   }
 
   is_initialized = true;
@@ -148,7 +145,7 @@ void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
   if (!is_initialized)
     return;
 
-  routine_diagnostics_callback->start();
+  mrs_lib::Routine profiler_routine = profiler->createRoutine("callbackDiagnostics");
 
   for (size_t i = 0; i < msg->status.size(); i++) {
 
@@ -307,8 +304,8 @@ void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
     ROS_WARN("[MavrosDiagnostics]: Armed: %s", btoa(armed));
   }
 
-  mutex_diag.lock();
-  {
+  { std::scoped_lock lock(mutex_diag);
+
     diag.header.stamp           = ros::Time::now();
     diag.gps.satellites_visible = satellites_visible;
     diag.gps.fix_type           = fix_type;
@@ -328,9 +325,6 @@ void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
       ROS_ERROR("Exception caught during publishing topic %s.", publisher_diagnostics.getTopic().c_str());
     }
   }
-  mutex_diag.unlock();
-
-  routine_diagnostics_callback->end();
 }
 //}
 
@@ -340,15 +334,14 @@ void MavrosDiagnostics::callbackMavrosState(const mavros_msgs::StateConstPtr &ms
   if (!is_initialized)
     return;
 
-  routine_mavros_state_callback->start();
+  mrs_lib::Routine profiler_routine = profiler->createRoutine("callbackMavrosState");
 
   armed = msg->armed;
 
-  mutex_diag.lock();
-  { diag.state.armed = armed; }
-  mutex_diag.unlock();
+  { std::scoped_lock lock(mutex_diag);
 
-  routine_mavros_state_callback->end();
+    diag.state.armed = armed;
+  }
 }
 //}
 
@@ -361,12 +354,11 @@ bool MavrosDiagnostics::callbackSimSatellites(mrs_msgs::Vec1::Request &req, mrs_
     sim_satellites = false;
   } else {
 
-    mutex_satellites_visible.lock();
-    {
+    { std::scoped_lock lock(mutex_satellites_visible);
+
       sim_satellites     = true;
-      satellites_visible = (int)req.goal;
+      satellites_visible = int(req.goal);
     }
-    mutex_satellites_visible.unlock();
   }
 
   res.success = true;

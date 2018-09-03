@@ -1,6 +1,5 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
-#include <mutex>
 #include <tf/LinearMath/Transform.h>
 #include <nodelet/nodelet.h>
 
@@ -31,11 +30,9 @@ private:
   void callbackOdometry(const nav_msgs::OdometryConstPtr &msg);
 
 private:
-
 private:
   mrs_lib::Profiler *profiler;
-  bool profiler_enabled_ = false;
-  mrs_lib::Routine * routine_odometry_callback;
+  bool               profiler_enabled_ = false;
 };
 
 //}
@@ -58,25 +55,25 @@ void MavrosInterface::onInit() {
   // |                         subscribers                        |
   // --------------------------------------------------------------
 
-  subscriber_odometry    = nh_.subscribe("odometry_in", 1, &MavrosInterface::callbackOdometry, this, ros::TransportHints().tcpNoDelay());
+  subscriber_odometry = nh_.subscribe("odometry_in", 1, &MavrosInterface::callbackOdometry, this, ros::TransportHints().tcpNoDelay());
 
   // --------------------------------------------------------------
   // |                         publishers                         |
   // --------------------------------------------------------------
   //
-  publisher_odometry    = nh_.advertise<nav_msgs::Odometry>("odometry_out", 1);
+  publisher_odometry = nh_.advertise<nav_msgs::Odometry>("odometry_out", 1);
 
   // --------------------------------------------------------------
   // |                          profiler                          |
   // --------------------------------------------------------------
 
-  profiler                     = new mrs_lib::Profiler(nh_, "MavrosInterface", profiler_enabled_);
-  routine_odometry_callback    = profiler->registerRoutine("callbackOdometry");
+  profiler = new mrs_lib::Profiler(nh_, "MavrosInterface", profiler_enabled_);
 
   // | ----------------------- finish init ---------------------- |
 
   if (!param_loader.loaded_successfully()) {
-    ros::shutdown(); 
+    ROS_ERROR("[MavrosInterface]: Could not load all parameters!");
+    ros::shutdown();
   }
 
   is_initialized = true;
@@ -97,7 +94,7 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
   if (!is_initialized)
     return;
 
-  routine_odometry_callback->start();
+  mrs_lib::Routine profiler_routine = profiler->createRoutine("callbackOdometry");
 
   nav_msgs::Odometry updated_odometry = *msg;
 
@@ -145,12 +142,10 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
   catch (...) {
     ROS_ERROR("Exception caught during publishing topic %s.", publisher_odometry.getTopic().c_str());
   }
-
-  routine_odometry_callback->end();
 }
 
 //}
-//
+
 }  // namespace mrs_mavros_interface
 
 #include <pluginlib/class_list_macros.h>
