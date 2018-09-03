@@ -304,8 +304,9 @@ void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
     ROS_WARN("[MavrosDiagnostics]: Armed: %s", btoa(armed));
   }
 
-  mutex_diag.lock();
   {
+    std::scoped_lock lock(mutex_diag);
+
     diag.header.stamp           = ros::Time::now();
     diag.gps.satellites_visible = satellites_visible;
     diag.gps.fix_type           = fix_type;
@@ -325,7 +326,6 @@ void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
       ROS_ERROR("Exception caught during publishing topic %s.", publisher_diagnostics.getTopic().c_str());
     }
   }
-  mutex_diag.unlock();
 }
 //}
 
@@ -339,9 +339,11 @@ void MavrosDiagnostics::callbackMavrosState(const mavros_msgs::StateConstPtr &ms
 
   armed = msg->armed;
 
-  mutex_diag.lock();
-  { diag.state.armed = armed; }
-  mutex_diag.unlock();
+  {
+    std::scoped_lock lock(mutex_diag);
+
+    diag.state.armed = armed;
+  }
 }
 //}
 
@@ -354,12 +356,12 @@ bool MavrosDiagnostics::callbackSimSatellites(mrs_msgs::Vec1::Request &req, mrs_
     sim_satellites = false;
   } else {
 
-    mutex_satellites_visible.lock();
     {
+      std::scoped_lock lock(mutex_satellites_visible);
+
       sim_satellites     = true;
-      satellites_visible = (int)req.goal;
+      satellites_visible = int(req.goal);
     }
-    mutex_satellites_visible.unlock();
   }
 
   res.success = true;

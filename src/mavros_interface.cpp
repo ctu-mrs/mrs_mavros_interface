@@ -1,6 +1,5 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
-#include <mutex>
 #include <tf/LinearMath/Transform.h>
 #include <nodelet/nodelet.h>
 
