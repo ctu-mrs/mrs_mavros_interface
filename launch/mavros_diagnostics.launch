@@ -1,11 +1,17 @@
 <launch>
 
   <arg name="uav_name" default="$(optenv UAV_NAME uav)"/>
+  <arg name="standalone" default="$(optenv STANDALONE false)"/>
   <arg name="profiler" default="$(optenv PROFILER false)" />
+
+  <arg unless="$(arg standalone)" name="nodelet" value="load"/>
+  <arg     if="$(arg standalone)" name="nodelet" value="standalone"/>
+  <arg unless="$(arg standalone)" name="nodelet_manager" value="$(arg uav_name)_nodelet_manager"/>
+  <arg     if="$(arg standalone)" name="nodelet_manager" value=""/>
 
   <group ns="$(arg uav_name)">
 
-    <node pkg="nodelet" type="nodelet" name="mavros_diagnostics" args="load mrs_mavros_interface/MavrosDiagnostics $(arg uav_name)_nodelet_manager" output="screen">
+    <node pkg="nodelet" type="nodelet" name="mavros_diagnostics" args="$(arg nodelet) mrs_mavros_interface/MavrosDiagnostics $(arg nodelet_manager)" output="screen">
 
       <rosparam file="$(find mrs_mavros_interface)/config/simulation.yaml" command="load" />
       <param name="enable_profiler" type="bool" value="$(arg profiler)" />
