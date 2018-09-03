@@ -304,8 +304,7 @@ void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
     ROS_WARN("[MavrosDiagnostics]: Armed: %s", btoa(armed));
   }
 
-  {
-    std::scoped_lock lock(mutex_diag);
+  { std::scoped_lock lock(mutex_diag);
 
     diag.header.stamp           = ros::Time::now();
     diag.gps.satellites_visible = satellites_visible;
@@ -339,8 +338,7 @@ void MavrosDiagnostics::callbackMavrosState(const mavros_msgs::StateConstPtr &ms
 
   armed = msg->armed;
 
-  {
-    std::scoped_lock lock(mutex_diag);
+  { std::scoped_lock lock(mutex_diag);
 
     diag.state.armed = armed;
   }
@@ -356,8 +354,7 @@ bool MavrosDiagnostics::callbackSimSatellites(mrs_msgs::Vec1::Request &req, mrs_
     sim_satellites = false;
   } else {
 
-    {
-      std::scoped_lock lock(mutex_satellites_visible);
+    { std::scoped_lock lock(mutex_satellites_visible);
 
       sim_satellites     = true;
       satellites_visible = int(req.goal);
