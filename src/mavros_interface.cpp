@@ -1,9 +1,11 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
-#include <mutex>
 #include <tf/LinearMath/Transform.h>
 #include <nodelet/nodelet.h>
+
 #include <mrs_lib/Profiler.h>
+#include <mrs_lib/ParamLoader.h>
+
 #include <std_srvs/Trigger.h>
 
 namespace mrs_mavros_interface
@@ -28,13 +30,9 @@ private:
   void callbackOdometry(const nav_msgs::OdometryConstPtr &msg);
 
 private:
-  ros::ServiceServer service_server_jump_emulation;
-  bool               emulateJump(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-  double             jump_offset = 0;
-
 private:
   mrs_lib::Profiler *profiler;
-  mrs_lib::Routine * routine_odometry_callback;
+  bool               profiler_enabled_ = false;
 };
 
 //}
@@ -46,6 +44,12 @@ void MavrosInterface::onInit() {
   ros::NodeHandle nh_ = nodelet::Nodelet::getMTPrivateNodeHandle();
 
   ros::Time::waitForValid();
+
+  mrs_lib::ParamLoader param_loader(nh_, "MavrosInterface");
+
+  /* nh_.getParam("profiler", profiler_enabled_); */
+  /* ROS_INFO("[MavrosInterface]: profiler_enabled_: %d", profiler_enabled_); */
+  param_loader.load_param("enable_profiler", profiler_enabled_);
 
   // --------------------------------------------------------------
   // |                         subscribers                        |
@@ -60,19 +64,17 @@ void MavrosInterface::onInit() {
   publisher_odometry = nh_.advertise<nav_msgs::Odometry>("odometry_out", 1);
 
   // --------------------------------------------------------------
-  // |                          services                          |
-  // --------------------------------------------------------------
-
-  service_server_jump_emulation = nh_.advertiseService("emulate_jump", &MavrosInterface::emulateJump, this);
-
-  // --------------------------------------------------------------
   // |                          profiler                          |
   // --------------------------------------------------------------
 
-  profiler                  = new mrs_lib::Profiler(nh_, "MavrosInterface");
-  routine_odometry_callback = profiler->registerRoutine("callbackOdometry");
+  profiler = new mrs_lib::Profiler(nh_, "MavrosInterface", profiler_enabled_);
 
   // | ----------------------- finish init ---------------------- |
+
+  if (!param_loader.loaded_successfully()) {
+    ROS_ERROR("[MavrosInterface]: Could not load all parameters!");
+    ros::shutdown();
+  }
 
   is_initialized = true;
 
@@ -92,7 +94,7 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
   if (!is_initialized)
     return;
 
-  routine_odometry_callback->start();
+  mrs_lib::Routine profiler_routine = profiler->createRoutine("callbackOdometry");
 
   nav_msgs::Odometry updated_odometry = *msg;
 
@@ -115,12 +117,6 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
 
   tf::Vector3 rotated_velocity = tf::quatRotate(rotation, velocity);
   tf::Vector3 rotated_angular  = tf::quatRotate(rotation, angular);
-
-  // --------------------------------------------------------------
-  // |                        emulate jump                        |
-  // --------------------------------------------------------------
-
-  updated_odometry.pose.pose.position.x += jump_offset;
 
   // --------------------------------------------------------------
   // |        update the odometry message with the new data       |
@@ -146,29 +142,10 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
   catch (...) {
     ROS_ERROR("Exception caught during publishing topic %s.", publisher_odometry.getTopic().c_str());
   }
-
-  routine_odometry_callback->end();
 }
 
 //}
 
-//{ emulateJump()
-
-bool MavrosInterface::emulateJump(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
-
-  jump_offset += 2.0;
-
-  if (jump_offset > 3) {
-    jump_offset = 10;
-  }
-
-  res.message = "yep";
-  res.success = true;
-
-  return true;
-}
-
-//}
 }  // namespace mrs_mavros_interface
 
 #include <pluginlib/class_list_macros.h>
