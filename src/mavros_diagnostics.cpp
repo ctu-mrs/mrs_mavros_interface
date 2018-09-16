@@ -2,6 +2,7 @@
 #include <nodelet/nodelet.h>
 
 #include <diagnostic_msgs/DiagnosticArray.h>
+#include <std_msgs/Int64.h>
 
 #include <mavros_msgs/State.h>
 
@@ -32,6 +33,7 @@ private:
 private:
   ros::Subscriber subscriber_diagnostics;
   ros::Subscriber subscriber_mavros_state;
+  ros::Subscriber subscriber_simulation_num_satelites;
 
   ros::Publisher publisher_diagnostics;
 
@@ -45,6 +47,7 @@ private:
 private:
   void callbackDiagnostics(const diagnostic_msgs::DiagnosticArrayConstPtr &msg);
   void callbackMavrosState(const mavros_msgs::StateConstPtr &msg);
+  void callbackNumSatelites(const std_msgs::Int64ConstPtr &msg);
 
   bool callbackSimSatellites(mrs_msgs::Vec1::Request &req, mrs_msgs::Vec1::Response &res);
 
@@ -99,6 +102,7 @@ void MavrosDiagnostics::onInit() {
 
   subscriber_diagnostics  = nh_.subscribe("diagnostics_in", 1, &MavrosDiagnostics::callbackDiagnostics, this, ros::TransportHints().tcpNoDelay());
   subscriber_mavros_state = nh_.subscribe("mavros_state_in", 1, &MavrosDiagnostics::callbackMavrosState, this, ros::TransportHints().tcpNoDelay());
+  subscriber_simulation_num_satelites  = nh_.subscribe("num_satelites_in", 1, &MavrosDiagnostics::callbackNumSatelites, this, ros::TransportHints().tcpNoDelay());
 
   // --------------------------------------------------------------
   // |                         publishers                         |
@@ -342,6 +346,16 @@ void MavrosDiagnostics::callbackMavrosState(const mavros_msgs::StateConstPtr &ms
 
     diag.state.armed = armed;
   }
+}
+//}
+
+//{ callbackNumSatelites()
+void MavrosDiagnostics::callbackNumSatelites(const std_msgs::Int64ConstPtr &msg) {
+	ROS_WARN_STREAM_THROTTLE(1,"[MavrosDiagnostics] num_satelites "<<msg->data);
+	{ std::scoped_lock lock(mutex_satellites_visible);
+	 sim_satellites     = true;
+	 satellites_visible = msg->data;
+	}
 }
 //}
 
