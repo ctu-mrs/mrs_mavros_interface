@@ -19,6 +19,7 @@
       <!-- Subscribers --> 
       <remap from="~diagnostics_in" to="/diagnostics" />
       <remap from="~mavros_state_in" to="mavros/state" />
+      <remap from="~num_satelites_in" to="gps_sat_num_visible" />
 
       <!-- Publisher --> 
       <remap from="~diagnostics_out" to="mavros_interface/diagnostics" />
