@@ -22,8 +22,7 @@
   <run_depend>mrs_lib</run_depend>
 
   <export>
-    <nodelet plugin="${prefix}/mavros_interface.xml" />
-    <nodelet plugin="${prefix}/mavros_diagnostics.xml" />
+    <nodelet plugin="${prefix}/plugins.xml" />
   </export>
 
 </package>
