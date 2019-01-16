@@ -11,172 +11,170 @@
 namespace mrs_mavros_interface
 {
 
-//{ class MavrosInterface
+  /* MavrosInterface //{ */
+  class MavrosInterface : public nodelet::Nodelet {
 
-class MavrosInterface : public nodelet::Nodelet {
+  public:
+    virtual void onInit();
 
-public:
-  virtual void onInit();
+  private:
+    ros::NodeHandle nh_;
+    bool            is_initialized = false;
 
-private:
-  ros::NodeHandle nh_;
-  bool            is_initialized = false;
+  private:
+    ros::Subscriber subscriber_odometry;
+    ros::Publisher  publisher_odometry;
 
-private:
-  ros::Subscriber subscriber_odometry;
-  ros::Publisher  publisher_odometry;
+  private:
+    void callbackOdometry(const nav_msgs::OdometryConstPtr &msg);
 
-private:
-  void callbackOdometry(const nav_msgs::OdometryConstPtr &msg);
+  private:
+    ros::ServiceServer service_server_jump_emulation;
+    bool               emulateJump(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+    double             jump_offset = 0;
 
-private:
-  ros::ServiceServer service_server_jump_emulation;
-  bool emulateJump(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-  double jump_offset = 0;
+  private:
+    mrs_lib::Profiler *profiler;
+    bool               profiler_enabled_ = false;
+  };
+  //}
 
-private:
-  mrs_lib::Profiler *profiler;
-  bool               profiler_enabled_ = false;
-};
+  /* inInit() //{ */
 
-//}
+  void MavrosInterface::onInit() {
 
-//{ onInit()
+    ros::NodeHandle nh_ = nodelet::Nodelet::getMTPrivateNodeHandle();
 
-void MavrosInterface::onInit() {
+    ros::Time::waitForValid();
 
-  ros::NodeHandle nh_ = nodelet::Nodelet::getMTPrivateNodeHandle();
+    mrs_lib::ParamLoader param_loader(nh_, "MavrosInterface");
 
-  ros::Time::waitForValid();
+    /* nh_.getParam("profiler", profiler_enabled_); */
+    /* ROS_INFO("[MavrosInterface]: profiler_enabled_: %d", profiler_enabled_); */
+    param_loader.load_param("enable_profiler", profiler_enabled_);
 
-  mrs_lib::ParamLoader param_loader(nh_, "MavrosInterface");
+    // --------------------------------------------------------------
+    // |                         subscribers                        |
+    // --------------------------------------------------------------
 
-  /* nh_.getParam("profiler", profiler_enabled_); */
-  /* ROS_INFO("[MavrosInterface]: profiler_enabled_: %d", profiler_enabled_); */
-  param_loader.load_param("enable_profiler", profiler_enabled_);
+    subscriber_odometry = nh_.subscribe("odometry_in", 1, &MavrosInterface::callbackOdometry, this, ros::TransportHints().tcpNoDelay());
 
-  // --------------------------------------------------------------
-  // |                         subscribers                        |
-  // --------------------------------------------------------------
+    // --------------------------------------------------------------
+    // |                         publishers                         |
+    // --------------------------------------------------------------
 
-  subscriber_odometry = nh_.subscribe("odometry_in", 1, &MavrosInterface::callbackOdometry, this, ros::TransportHints().tcpNoDelay());
+    publisher_odometry = nh_.advertise<nav_msgs::Odometry>("odometry_out", 1);
 
-  // --------------------------------------------------------------
-  // |                         publishers                         |
-  // --------------------------------------------------------------
- 
-  publisher_odometry = nh_.advertise<nav_msgs::Odometry>("odometry_out", 1);
+    // --------------------------------------------------------------
+    // |                          services                          |
+    // --------------------------------------------------------------
 
-  // --------------------------------------------------------------
-  // |                          services                          |
-  // --------------------------------------------------------------
-  
-  service_server_jump_emulation = nh_.advertiseService("emulate_jump", &MavrosInterface::emulateJump, this);
+    service_server_jump_emulation = nh_.advertiseService("emulate_jump", &MavrosInterface::emulateJump, this);
 
-  // --------------------------------------------------------------
-  // |                          profiler                          |
-  // --------------------------------------------------------------
+    // --------------------------------------------------------------
+    // |                          profiler                          |
+    // --------------------------------------------------------------
 
-  profiler = new mrs_lib::Profiler(nh_, "MavrosInterface", profiler_enabled_);
+    profiler = new mrs_lib::Profiler(nh_, "MavrosInterface", profiler_enabled_);
 
-  // | ----------------------- finish init ---------------------- |
+    // | ----------------------- finish init ---------------------- |
 
-  if (!param_loader.loaded_successfully()) {
-    ROS_ERROR("[MavrosInterface]: Could not load all parameters!");
-    ros::shutdown();
+    if (!param_loader.loaded_successfully()) {
+      ROS_ERROR("[MavrosInterface]: Could not load all parameters!");
+      ros::shutdown();
+    }
+
+    is_initialized = true;
+
+    ROS_INFO("[MavrosInterface]: initialized");
   }
 
-  is_initialized = true;
-
-  ROS_INFO("[MavrosInterface]: initialized");
-}
-
-//}
-
-// --------------------------------------------------------------
-// |                          callbacks                         |
-// --------------------------------------------------------------
-
-//{ callbackOdometry()
-
-void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
-
-  if (!is_initialized)
-    return;
-
-  mrs_lib::Routine profiler_routine = profiler->createRoutine("callbackOdometry");
-
-  nav_msgs::Odometry updated_odometry = *msg;
+  //}
 
   // --------------------------------------------------------------
-  // |        extract the vectors from the original message       |
+  // |                          callbacks                         |
   // --------------------------------------------------------------
 
-  tf::Vector3 velocity(msg->twist.twist.linear.x, msg->twist.twist.linear.y, msg->twist.twist.linear.z);
-  tf::Vector3 angular(msg->twist.twist.angular.x, msg->twist.twist.angular.y, msg->twist.twist.angular.z);
+  /* callbackOdometry() //{ */
 
-  // --------------------------------------------------------------
-  // |           prepare the quaternion for the rotation          |
-  // --------------------------------------------------------------
+  void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
 
-  tf::Quaternion rotation(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z, msg->pose.pose.orientation.w);
+    if (!is_initialized)
+      return;
 
-  // --------------------------------------------------------------
-  // |                     rotate the vectors                     |
-  // --------------------------------------------------------------
+    mrs_lib::Routine profiler_routine = profiler->createRoutine("callbackOdometry");
 
-  tf::Vector3 rotated_velocity = tf::quatRotate(rotation, velocity);
-  tf::Vector3 rotated_angular  = tf::quatRotate(rotation, angular);
+    nav_msgs::Odometry updated_odometry = *msg;
 
-  // --------------------------------------------------------------
-  // |                        emulate jump                        |
-  // --------------------------------------------------------------
+    // --------------------------------------------------------------
+    // |        extract the vectors from the original message       |
+    // --------------------------------------------------------------
 
-  updated_odometry.pose.pose.position.x += jump_offset;
+    tf::Vector3 velocity(msg->twist.twist.linear.x, msg->twist.twist.linear.y, msg->twist.twist.linear.z);
+    tf::Vector3 angular(msg->twist.twist.angular.x, msg->twist.twist.angular.y, msg->twist.twist.angular.z);
 
-  // --------------------------------------------------------------
-  // |        update the odometry message with the new data       |
-  // --------------------------------------------------------------
+    // --------------------------------------------------------------
+    // |           prepare the quaternion for the rotation          |
+    // --------------------------------------------------------------
 
-  updated_odometry.twist.twist.linear.x = rotated_velocity[0];
-  updated_odometry.twist.twist.linear.y = rotated_velocity[1];
-  updated_odometry.twist.twist.linear.z = rotated_velocity[2];
+    tf::Quaternion rotation(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z, msg->pose.pose.orientation.w);
 
-  updated_odometry.twist.twist.angular.x = rotated_angular[0];
-  updated_odometry.twist.twist.angular.y = rotated_angular[1];
-  updated_odometry.twist.twist.angular.z = rotated_angular[2];
+    // --------------------------------------------------------------
+    // |                     rotate the vectors                     |
+    // --------------------------------------------------------------
 
-  updated_odometry.child_frame_id = "local_origin";
+    tf::Vector3 rotated_velocity = tf::quatRotate(rotation, velocity);
+    tf::Vector3 rotated_angular  = tf::quatRotate(rotation, angular);
 
-  // --------------------------------------------------------------
-  // |                  publish the new odometry                  |
-  // --------------------------------------------------------------
+    // --------------------------------------------------------------
+    // |                        emulate jump                        |
+    // --------------------------------------------------------------
 
-  try {
-    publisher_odometry.publish(nav_msgs::OdometryConstPtr(new nav_msgs::Odometry(updated_odometry)));
-  }
-  catch (...) {
-    ROS_ERROR("Exception caught during publishing topic %s.", publisher_odometry.getTopic().c_str());
-  }
-}
+    updated_odometry.pose.pose.position.x += jump_offset;
 
-//}
+    // --------------------------------------------------------------
+    // |        update the odometry message with the new data       |
+    // --------------------------------------------------------------
 
-/* emulateJump() //{ */
-bool MavrosInterface::emulateJump(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
+    updated_odometry.twist.twist.linear.x = rotated_velocity[0];
+    updated_odometry.twist.twist.linear.y = rotated_velocity[1];
+    updated_odometry.twist.twist.linear.z = rotated_velocity[2];
 
-  jump_offset += 2.0;
+    updated_odometry.twist.twist.angular.x = rotated_angular[0];
+    updated_odometry.twist.twist.angular.y = rotated_angular[1];
+    updated_odometry.twist.twist.angular.z = rotated_angular[2];
 
-  if (jump_offset > 3) {
-    jump_offset = 10; 
+    updated_odometry.child_frame_id = "local_origin";
+
+    // --------------------------------------------------------------
+    // |                  publish the new odometry                  |
+    // --------------------------------------------------------------
+
+    try {
+      publisher_odometry.publish(nav_msgs::OdometryConstPtr(new nav_msgs::Odometry(updated_odometry)));
+    }
+    catch (...) {
+      ROS_ERROR("Exception caught during publishing topic %s.", publisher_odometry.getTopic().c_str());
+    }
   }
 
-  res.message = "yep";
-  res.success = true;
+  //}
 
-  return true;
-}
-//}
+  /* emulateJump() //{ */
+  bool MavrosInterface::emulateJump([[maybe_unused]] std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
+
+    jump_offset += 2.0;
+
+    if (jump_offset > 3) {
+      jump_offset = 10;
+    }
+
+    res.message = "yep";
+    res.success = true;
+
+    return true;
+  }
+  //}
 
 }  // namespace mrs_mavros_interface
 
