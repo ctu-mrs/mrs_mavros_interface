@@ -163,11 +163,19 @@ namespace mrs_mavros_interface
   /* emulateJump() //{ */
   bool MavrosInterface::emulateJump([[maybe_unused]] std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
 
-    jump_offset += 2.0;
+    /* jump_offset += 2.0; */
+    jump_offset = 1000;
 
-    if (jump_offset > 3) {
-      jump_offset = 10;
-    }
+    /* if (jump_offset > 3 && jump_offset < 10) { */
+    /*   jump_offset = 10; */
+    /* } */
+
+    /* if (jump_offset > 11) { */
+    /*   jump_offset = 1000; */
+    /* } */
+    
+    
+    ROS_INFO("[MavrosInterface]: Emulated jump: %f", jump_offset);
 
     res.message = "yep";
     res.success = true;
