@@ -281,7 +281,7 @@ void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
     }
   }
 
-  if (satellites_visible < min_satellites_visible_) {
+  if (satellites_visible > 0 && satellites_visible < min_satellites_visible_) {
     ROS_WARN("[MavrosDiagnostics]: Low number of satellites visible: %d", satellites_visible);
   }
 
