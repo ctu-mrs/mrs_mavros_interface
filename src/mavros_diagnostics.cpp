@@ -1,3 +1,5 @@
+/* includes //{ */
+
 #include <ros/ros.h>
 #include <nodelet/nodelet.h>
 
@@ -15,9 +17,14 @@
 
 #include <mutex>
 
+//}
+
 #define btoa(x) ((x) ? "true" : "false")
 
 namespace mrs_mavros_interface
+{
+
+namespace mavros_diagnostics
 {
 
 //{ class MavrosDiagnostics
@@ -102,7 +109,8 @@ void MavrosDiagnostics::onInit() {
 
   subscriber_diagnostics  = nh_.subscribe("diagnostics_in", 1, &MavrosDiagnostics::callbackDiagnostics, this, ros::TransportHints().tcpNoDelay());
   subscriber_mavros_state = nh_.subscribe("mavros_state_in", 1, &MavrosDiagnostics::callbackMavrosState, this, ros::TransportHints().tcpNoDelay());
-  subscriber_simulation_num_satelites  = nh_.subscribe("num_satelites_in", 1, &MavrosDiagnostics::callbackNumSatelites, this, ros::TransportHints().tcpNoDelay());
+  subscriber_simulation_num_satelites =
+      nh_.subscribe("num_satelites_in", 1, &MavrosDiagnostics::callbackNumSatelites, this, ros::TransportHints().tcpNoDelay());
 
   // --------------------------------------------------------------
   // |                         publishers                         |
@@ -308,7 +316,8 @@ void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
     ROS_WARN("[MavrosDiagnostics]: Armed: %s", btoa(armed));
   }
 
-  { std::scoped_lock lock(mutex_diag);
+  {
+    std::scoped_lock lock(mutex_diag);
 
     diag.header.stamp           = ros::Time::now();
     diag.gps.satellites_visible = satellites_visible;
@@ -342,7 +351,8 @@ void MavrosDiagnostics::callbackMavrosState(const mavros_msgs::StateConstPtr &ms
 
   armed = msg->armed;
 
-  { std::scoped_lock lock(mutex_diag);
+  {
+    std::scoped_lock lock(mutex_diag);
 
     diag.state.armed = armed;
   }
@@ -351,11 +361,12 @@ void MavrosDiagnostics::callbackMavrosState(const mavros_msgs::StateConstPtr &ms
 
 //{ callbackNumSatelites()
 void MavrosDiagnostics::callbackNumSatelites(const std_msgs::Int64ConstPtr &msg) {
-	ROS_WARN_STREAM_THROTTLE(1,"[MavrosDiagnostics] num_satelites "<<msg->data);
-	{ std::scoped_lock lock(mutex_satellites_visible);
-	 sim_satellites     = true;
-	 satellites_visible = msg->data;
-	}
+  ROS_WARN_STREAM_THROTTLE(1, "[MavrosDiagnostics] num_satelites " << msg->data);
+  {
+    std::scoped_lock lock(mutex_satellites_visible);
+    sim_satellites     = true;
+    satellites_visible = msg->data;
+  }
 }
 //}
 
@@ -368,7 +379,8 @@ bool MavrosDiagnostics::callbackSimSatellites(mrs_msgs::Vec1::Request &req, mrs_
     sim_satellites = false;
   } else {
 
-    { std::scoped_lock lock(mutex_satellites_visible);
+    {
+      std::scoped_lock lock(mutex_satellites_visible);
 
       sim_satellites     = true;
       satellites_visible = int(req.goal);
@@ -382,7 +394,9 @@ bool MavrosDiagnostics::callbackSimSatellites(mrs_msgs::Vec1::Request &req, mrs_
 }
 //}
 
+}  // namespace mavros_diagnostics
+
 }  // namespace mrs_mavros_interface
 
 #include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(mrs_mavros_interface::MavrosDiagnostics, nodelet::Nodelet)
+PLUGINLIB_EXPORT_CLASS(mrs_mavros_interface::mavros_diagnostics::MavrosDiagnostics, nodelet::Nodelet)
