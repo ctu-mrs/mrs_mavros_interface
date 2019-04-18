@@ -11,12 +11,13 @@ find_package(catkin REQUIRED COMPONENTS
   mrs_msgs
   mrs_lib
   nav_msgs
+  mavros_msgs
   nodelet
   )
 
 catkin_package(
   CATKIN_DEPENDS nav_msgs mrs_lib
-  LIBRARIES MavrosInterface MavrosDiagnostics
+  LIBRARIES MavrosInterface MavrosDiagnostics mavros_msgs
   #  DEPENDS system_lib
   )
 
