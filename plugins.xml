@@ -1,11 +1,11 @@
 <library path="lib/libMavrosInterface">
-  <class name="mrs_mavros_interface/MavrosInterface" type="mrs_mavros_interface::MavrosInterface" base_class_type="nodelet::Nodelet">
+  <class name="mrs_mavros_interface/MavrosInterface" type="mrs_mavros_interface::mavros_interface::MavrosInterface" base_class_type="nodelet::Nodelet">
     <description>MavrosInterface nodelet</description>
   </class>
 </library>
 
 <library path="lib/libMavrosDiagnostics">
-  <class name="mrs_mavros_interface/MavrosDiagnostics" type="mrs_mavros_interface::MavrosDiagnostics" base_class_type="nodelet::Nodelet">
+  <class name="mrs_mavros_interface/MavrosDiagnostics" type="mrs_mavros_interface::mavros_diagnostics::MavrosDiagnostics" base_class_type="nodelet::Nodelet">
     <description>MavrosDiagnostics nodelet</description>
   </class>
 </library>
