@@ -1,18 +1,20 @@
 <launch>
 
-  <arg name="UAV_NAME" default="$(env UAV_NAME)"/>
-  <arg name="STANDALONE" default="$(optenv STANDALONE false)"/>
+  <!-- args corresponding to environment variables -->
+  <arg name="UAV_NAME" default="$(env UAV_NAME)" />
   <arg name="PROFILER" default="$(optenv PROFILER false)" />
 
+    <!-- other args -->
+  <arg name="standalone" default="false" />
   <arg name="debug" default="false" />
 
-  <arg     if="$(eval arg('STANDALONE') or arg('debug'))" name="nodelet" value="standalone"/>
-  <arg unless="$(eval arg('STANDALONE') or arg('debug'))" name="nodelet" value="load"/>
-  <arg     if="$(eval arg('STANDALONE') or arg('debug'))" name="nodelet_manager" value=""/>
-  <arg unless="$(eval arg('STANDALONE') or arg('debug'))" name="nodelet_manager" value="$(arg UAV_NAME)_nodelet_manager"/>
+  <arg     if="$(eval arg('standalone') or arg('debug'))" name="nodelet" value="standalone" />
+  <arg unless="$(eval arg('standalone') or arg('debug'))" name="nodelet" value="load" />
+  <arg     if="$(eval arg('standalone') or arg('debug'))" name="nodelet_manager" value="" />
+  <arg unless="$(eval arg('standalone') or arg('debug'))" name="nodelet_manager" value="$(arg UAV_NAME)_nodelet_manager" />
 
-  <arg     if="$(arg debug)" name="launch_prefix" value="debug_roslaunch"/>
-  <arg unless="$(arg debug)" name="launch_prefix" value=""/>
+  <arg     if="$(arg debug)" name="launch_prefix" value="debug_roslaunch" />
+  <arg unless="$(arg debug)" name="launch_prefix" value="" />
 
   <group ns="$(arg UAV_NAME)">
 
@@ -20,10 +22,10 @@
 
       <param name="enable_profiler" type="bool" value="$(arg PROFILER)" />
 
-      <!-- Subscribers -->
+        <!-- Subscribers -->
       <remap from="~odometry_in" to="mavros/local_position/odom" />
 
-      <!-- Publisher -->
+        <!-- Publisher -->
       <remap from="~odometry_out" to="~converted_mavros_odom" />
       <remap from="~profiler" to="profiler" />
 
