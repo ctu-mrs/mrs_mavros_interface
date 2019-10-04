@@ -27,7 +27,7 @@ namespace mrs_mavros_interface
 namespace mavros_diagnostics
 {
 
-//{ class MavrosDiagnostics
+/* class MavrosDiagnostics //{ */
 
 class MavrosDiagnostics : public nodelet::Nodelet {
 
@@ -54,7 +54,7 @@ private:
 private:
   void callbackDiagnostics(const diagnostic_msgs::DiagnosticArrayConstPtr &msg);
   void callbackMavrosState(const mavros_msgs::StateConstPtr &msg);
-  void callbackNumSatelites(const std_msgs::Int64ConstPtr &msg);
+  void callbackNumSatellites(const std_msgs::Int64ConstPtr &msg);
 
   bool callbackSimSatellites(mrs_msgs::Vec1::Request &req, mrs_msgs::Vec1::Response &res);
 
@@ -68,7 +68,8 @@ private:
   int         satellites_visible, fix_type, errors_comm;
   int         last_errors_comm = 0;
   float       eph, epv, cpu_load, voltage, current;
-  bool        offboard, armed;
+  bool        offboard       = false;
+  bool        armed          = false;
   bool        last_offboard  = false;
   bool        last_armed     = false;
   bool        sim_satellites = false;
@@ -83,7 +84,7 @@ private:
 
 //}
 
-//{ onInit()
+/* onInit() //{ */
 
 void MavrosDiagnostics::onInit() {
 
@@ -110,7 +111,7 @@ void MavrosDiagnostics::onInit() {
   subscriber_diagnostics  = nh_.subscribe("diagnostics_in", 1, &MavrosDiagnostics::callbackDiagnostics, this, ros::TransportHints().tcpNoDelay());
   subscriber_mavros_state = nh_.subscribe("mavros_state_in", 1, &MavrosDiagnostics::callbackMavrosState, this, ros::TransportHints().tcpNoDelay());
   subscriber_simulation_num_satelites =
-      nh_.subscribe("num_satelites_in", 1, &MavrosDiagnostics::callbackNumSatelites, this, ros::TransportHints().tcpNoDelay());
+      nh_.subscribe("num_satelites_in", 1, &MavrosDiagnostics::callbackNumSatellites, this, ros::TransportHints().tcpNoDelay());
 
   // --------------------------------------------------------------
   // |                         publishers                         |
@@ -151,7 +152,8 @@ void MavrosDiagnostics::onInit() {
 
 // | --------------------- topic callbacks -------------------- |
 
-//{ callbackDiagnostics()
+/* callbackDiagnostics() //{ */
+
 void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArrayConstPtr &msg) {
 
   if (!is_initialized)
@@ -159,14 +161,14 @@ void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
 
   mrs_lib::Routine profiler_routine = profiler->createRoutine("callbackDiagnostics");
 
+  std::scoped_lock lock(mutex_satellites_visible);
+
   for (size_t i = 0; i < msg->status.size(); i++) {
 
     // GPS
     if (msg->status[i].name.find("GPS") != std::string::npos) {
 
-
       for (size_t j = 0; j < msg->status[i].values.size(); j++) {
-
 
         // Satellites visible
         if (std::strcmp((msg->status[i].values[j].key).c_str(), "Satellites visible") == 0) {
@@ -339,9 +341,11 @@ void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
     }
   }
 }
+
 //}
 
-//{ callbackMavrosState()
+/* callbackMavrosState() //{ */
+
 void MavrosDiagnostics::callbackMavrosState(const mavros_msgs::StateConstPtr &msg) {
 
   if (!is_initialized)
@@ -357,22 +361,29 @@ void MavrosDiagnostics::callbackMavrosState(const mavros_msgs::StateConstPtr &ms
     diag.state.armed = armed;
   }
 }
+
 //}
 
-//{ callbackNumSatelites()
-void MavrosDiagnostics::callbackNumSatelites(const std_msgs::Int64ConstPtr &msg) {
+/* callbackNumSatellites() //{ */
+
+void MavrosDiagnostics::callbackNumSatellites(const std_msgs::Int64ConstPtr &msg) {
+
   ROS_WARN_STREAM_THROTTLE(1, "[MavrosDiagnostics] num_satelites " << msg->data);
+
   {
     std::scoped_lock lock(mutex_satellites_visible);
+
     sim_satellites     = true;
     satellites_visible = msg->data;
   }
 }
+
 //}
 
 // | -------------------- service callbacks ------------------- |
 
-//{ callbackSimSatellites()
+/* callbackSimSatellites() //{ */
+
 bool MavrosDiagnostics::callbackSimSatellites(mrs_msgs::Vec1::Request &req, mrs_msgs::Vec1::Response &res) {
 
   if (req.goal < 0) {
@@ -392,6 +403,7 @@ bool MavrosDiagnostics::callbackSimSatellites(mrs_msgs::Vec1::Request &req, mrs_
 
   return true;
 }
+
 //}
 
 }  // namespace mavros_diagnostics

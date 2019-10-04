@@ -18,7 +18,8 @@ namespace mrs_mavros_interface
 namespace mavros_interface
 {
 
-/* MavrosInterface //{ */
+/* class MavrosInterface //{ */
+
 class MavrosInterface : public nodelet::Nodelet {
 
 public:
@@ -44,9 +45,10 @@ private:
   mrs_lib::Profiler *profiler;
   bool               profiler_enabled_ = false;
 };
+
 //}
 
-/* inInit() //{ */
+/* onInit() //{ */
 
 void MavrosInterface::onInit() {
 
@@ -168,6 +170,7 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
 //}
 
 /* emulateJump() //{ */
+
 bool MavrosInterface::emulateJump([[maybe_unused]] std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
 
   /* jump_offset += 2.0; */
@@ -189,6 +192,7 @@ bool MavrosInterface::emulateJump([[maybe_unused]] std_srvs::Trigger::Request &r
 
   return true;
 }
+
 //}
 
 }  // namespace mavros_interface
