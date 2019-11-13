@@ -20,6 +20,7 @@
 
     <node pkg="nodelet" type="nodelet" name="mavros_interface" args="$(arg nodelet) mrs_mavros_interface/MavrosInterface $(arg nodelet_manager)" output="screen" launch-prefix="$(arg launch_prefix)">
 
+      <param name="uav_name" type="string" value="$(arg UAV_NAME)" />
       <param name="enable_profiler" type="bool" value="$(arg PROFILER)" />
 
         <!-- Subscribers -->
