@@ -337,7 +337,7 @@ void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
       publisher_diagnostics.publish(diag);
     }
     catch (...) {
-      ROS_ERROR("Exception caught during publishing topic %s.", publisher_diagnostics.getTopic().c_str());
+      ROS_ERROR("[MavrosDiagnostics]: Exception caught during publishing topic %s.", publisher_diagnostics.getTopic().c_str());
     }
   }
 }

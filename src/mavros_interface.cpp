@@ -44,9 +44,9 @@ private:
 private:
   mrs_lib::Profiler *profiler;
   bool               profiler_enabled_ = false;
-  std::string uav_name_;
-  std::string fcu_frame_id_;
-  std::string local_origin_frame_id_;
+  std::string        uav_name_;
+  std::string        fcu_frame_id_;
+  std::string        local_origin_frame_id_;
 };
 
 //}
@@ -65,7 +65,7 @@ void MavrosInterface::onInit() {
   /* ROS_INFO("[MavrosInterface]: profiler_enabled_: %d", profiler_enabled_); */
   param_loader.load_param("uav_name", uav_name_);
   local_origin_frame_id_ = uav_name_ + "/local_origin";
-  fcu_frame_id_ = uav_name_ + "/fcu";
+  fcu_frame_id_          = uav_name_ + "/fcu";
   param_loader.load_param("enable_profiler", profiler_enabled_);
 
   // --------------------------------------------------------------
@@ -160,7 +160,7 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
   updated_odometry.twist.twist.angular.z = rotated_angular[2];
 
   updated_odometry.header.frame_id = local_origin_frame_id_;
-  updated_odometry.child_frame_id = fcu_frame_id_;
+  updated_odometry.child_frame_id  = fcu_frame_id_;
 
   // --------------------------------------------------------------
   // |                  publish the new odometry                  |
@@ -170,7 +170,7 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
     publisher_odometry.publish(nav_msgs::OdometryConstPtr(new nav_msgs::Odometry(updated_odometry)));
   }
   catch (...) {
-    ROS_ERROR("Exception caught during publishing topic %s.", publisher_odometry.getTopic().c_str());
+    ROS_ERROR("[MavrosInterface]: Exception caught during publishing topic %s.", publisher_odometry.getTopic().c_str());
   }
 }
 
