@@ -42,11 +42,11 @@ private:
   double             jump_offset = 0;
 
 private:
-  mrs_lib::Profiler *profiler;
-  bool               profiler_enabled_ = false;
-  std::string        uav_name_;
-  std::string        fcu_frame_id_;
-  std::string        local_origin_frame_id_;
+  mrs_lib::Profiler profiler;
+  bool              profiler_enabled_ = false;
+  std::string       uav_name_;
+  std::string       fcu_frame_id_;
+  std::string       local_origin_frame_id_;
 };
 
 //}
@@ -61,8 +61,6 @@ void MavrosInterface::onInit() {
 
   mrs_lib::ParamLoader param_loader(nh_, "MavrosInterface");
 
-  /* nh_.getParam("profiler", profiler_enabled_); */
-  /* ROS_INFO("[MavrosInterface]: profiler_enabled_: %d", profiler_enabled_); */
   param_loader.load_param("uav_name", uav_name_);
   local_origin_frame_id_ = uav_name_ + "/local_origin";
   fcu_frame_id_          = uav_name_ + "/fcu";
@@ -90,7 +88,7 @@ void MavrosInterface::onInit() {
   // |                          profiler                          |
   // --------------------------------------------------------------
 
-  profiler = new mrs_lib::Profiler(nh_, "MavrosInterface", profiler_enabled_);
+  profiler = mrs_lib::Profiler(nh_, "MavrosInterface", profiler_enabled_);
 
   // | ----------------------- finish init ---------------------- |
 
@@ -117,7 +115,7 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
   if (!is_initialized)
     return;
 
-  mrs_lib::Routine profiler_routine = profiler->createRoutine("callbackOdometry");
+  mrs_lib::Routine profiler_routine = profiler.createRoutine("callbackOdometry");
 
   nav_msgs::Odometry updated_odometry = *msg;
 

@@ -78,8 +78,8 @@ private:
   std::mutex mutex_satellites_visible;
 
 private:
-  mrs_lib::Profiler *profiler;
-  bool               profiler_enabled_ = false;
+  mrs_lib::Profiler profiler;
+  bool              profiler_enabled_ = false;
 };
 
 //}
@@ -130,7 +130,7 @@ void MavrosDiagnostics::onInit() {
   // |                          profiler                          |
   // --------------------------------------------------------------
 
-  profiler = new mrs_lib::Profiler(nh_, "MavrosInterface", profiler_enabled_);
+  profiler = mrs_lib::Profiler(nh_, "MavrosInterface", profiler_enabled_);
 
   // | ----------------------- finish init ---------------------- |
 
@@ -159,7 +159,7 @@ void MavrosDiagnostics::callbackDiagnostics(const diagnostic_msgs::DiagnosticArr
   if (!is_initialized)
     return;
 
-  mrs_lib::Routine profiler_routine = profiler->createRoutine("callbackDiagnostics");
+  mrs_lib::Routine profiler_routine = profiler.createRoutine("callbackDiagnostics");
 
   std::scoped_lock lock(mutex_satellites_visible);
 
@@ -351,7 +351,7 @@ void MavrosDiagnostics::callbackMavrosState(const mavros_msgs::StateConstPtr &ms
   if (!is_initialized)
     return;
 
-  mrs_lib::Routine profiler_routine = profiler->createRoutine("callbackMavrosState");
+  mrs_lib::Routine profiler_routine = profiler.createRoutine("callbackMavrosState");
 
   armed = msg->armed;
 
