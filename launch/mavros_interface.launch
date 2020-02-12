@@ -3,6 +3,8 @@
   <!-- args corresponding to environment variables -->
   <arg name="UAV_NAME" default="$(env UAV_NAME)" />
   <arg name="PROFILER" default="$(optenv PROFILER false)" />
+  <arg name="RUN_TYPE" default="$(env RUN_TYPE)" />
+  <arg name="UAV_TYPE" default="$(env UAV_TYPE)" />
 
     <!-- other args -->
   <arg name="standalone" default="false" />
@@ -19,6 +21,12 @@
   <group ns="$(arg UAV_NAME)">
 
     <node pkg="nodelet" type="nodelet" name="mavros_interface" args="$(arg nodelet) mrs_mavros_interface/MavrosInterface $(arg nodelet_manager)" output="screen" launch-prefix="$(arg launch_prefix)">
+
+      <!-- Load the default param files -->
+      <rosparam file="$(find mrs_mavros_interface)/config/default/mavros_interface.yaml" command="load" />
+
+        <!-- Load the particular param files -->
+      <rosparam file="$(find mrs_mavros_interface)/config/$(arg RUN_TYPE)/$(arg UAV_TYPE)/mavros_interface.yaml" command="load" />
 
       <param name="uav_name" type="string" value="$(arg UAV_NAME)" />
       <param name="enable_profiler" type="bool" value="$(arg PROFILER)" />
