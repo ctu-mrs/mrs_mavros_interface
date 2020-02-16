@@ -41,9 +41,16 @@ private:
   bool               emulateJump(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
   double             jump_offset = 0;
 
+  ros::ServiceServer service_server_gps_covariance;
+  bool               emulateGPSCovariance(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+  double             covariance_low = 1.0;
+  double             covariance_high = 11.0;
+  double             cov_ = 1.0;
+
 private:
   mrs_lib::Profiler profiler;
   bool              profiler_enabled_ = false;
+  bool              _simulation_ = false;
   std::string       uav_name_;
   std::string       fcu_frame_id_;
   std::string       local_origin_frame_id_;
@@ -65,6 +72,7 @@ void MavrosInterface::onInit() {
   local_origin_frame_id_ = uav_name_ + "/local_origin";
   fcu_frame_id_          = uav_name_ + "/fcu";
   param_loader.load_param("enable_profiler", profiler_enabled_);
+  param_loader.load_param("simulation", _simulation_);
 
   // --------------------------------------------------------------
   // |                         subscribers                        |
@@ -82,7 +90,10 @@ void MavrosInterface::onInit() {
   // |                          services                          |
   // --------------------------------------------------------------
 
-  service_server_jump_emulation = nh_.advertiseService("emulate_jump", &MavrosInterface::emulateJump, this);
+  if (_simulation_) {
+    service_server_jump_emulation = nh_.advertiseService("emulate_jump", &MavrosInterface::emulateJump, this);
+    service_server_gps_covariance = nh_.advertiseService("emulate_gps_covariance", &MavrosInterface::emulateGPSCovariance, this);
+  }
 
   // --------------------------------------------------------------
   // |                          profiler                          |
@@ -143,7 +154,11 @@ void MavrosInterface::callbackOdometry(const nav_msgs::OdometryConstPtr &msg) {
   // |                        emulate jump                        |
   // --------------------------------------------------------------
 
-  updated_odometry.pose.pose.position.x += jump_offset;
+  if (_simulation_) {
+    updated_odometry.pose.pose.position.x += jump_offset;
+    updated_odometry.pose.covariance.at(0) = cov_;
+    updated_odometry.pose.covariance.at(7) = cov_;
+  }
 
   // --------------------------------------------------------------
   // |        update the odometry message with the new data       |
@@ -191,6 +206,38 @@ bool MavrosInterface::emulateJump([[maybe_unused]] std_srvs::Trigger::Request &r
 
 
   ROS_INFO("[MavrosInterface]: Emulated jump: %f", jump_offset);
+
+  res.message = "yep";
+  res.success = true;
+
+  return true;
+}
+
+//}
+
+/* emulateGPSCovariance() //{ */
+
+bool MavrosInterface::emulateGPSCovariance([[maybe_unused]] std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
+
+  if (!is_initialized) {
+    res.message = "nope";
+    res.success = false;
+    return true;
+  }
+
+  if (!_simulation_) {
+    res.message = "nope";
+    res.success = false;
+    return true;
+  }
+
+  if (cov_ == covariance_high) {
+    cov_ = covariance_low;
+  } else {
+    cov_ = covariance_high;
+  }
+
+  ROS_INFO("[MavrosInterface]: Emulated GPS covariance: %f", cov_);
 
   res.message = "yep";
   res.success = true;
