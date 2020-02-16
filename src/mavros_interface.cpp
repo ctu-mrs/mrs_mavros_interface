@@ -1,3 +1,5 @@
+#define VERSION "0.0.3.0"
+
 /* includes //{ */
 
 #include <ros/ros.h>
@@ -26,6 +28,8 @@ public:
   virtual void onInit();
 
 private:
+  std::string _version_;
+
   ros::NodeHandle nh_;
   bool            is_initialized = false;
 
@@ -67,6 +71,14 @@ void MavrosInterface::onInit() {
   ros::Time::waitForValid();
 
   mrs_lib::ParamLoader param_loader(nh_, "MavrosInterface");
+
+  param_loader.load_param("version", _version_);
+
+  if (_version_ != VERSION) {
+
+    ROS_ERROR("[MavrosInterface]: the version of the binary (%s) does not match the config file (%s), please build me!", VERSION, _version_.c_str());
+    ros::shutdown();
+  }
 
   param_loader.load_param("uav_name", uav_name_);
   local_origin_frame_id_ = uav_name_ + "/local_origin";
@@ -110,7 +122,7 @@ void MavrosInterface::onInit() {
 
   is_initialized = true;
 
-  ROS_INFO("[MavrosInterface]: initialized");
+  ROS_INFO("[MavrosInterface]: initialized, version %s", VERSION);
 }
 
 //}
