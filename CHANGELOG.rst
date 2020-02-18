@@ -2,8 +2,8 @@
 Changelog for package mrs_mavros_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.4 (2020-02-18)
+------------------
 * fixed launch files
 * testing gps quality in ismulation
 * added version checks, refactored configs
