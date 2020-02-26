@@ -2,8 +2,8 @@
 Changelog for package mrs_mavros_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.5 (2020-02-26)
+------------------
 * fixed broken launch file after merge
 * remove dual RUN_TYPE param
 * Contributors: Tomas Baca, uav44
