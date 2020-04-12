@@ -13,9 +13,8 @@
 #include <mrs_msgs/MavrosDiagnostics.h>
 #include <mrs_msgs/Vec1.h>
 
-#include <mrs_lib/ParamLoader.h>
-
-#include <mrs_lib/Profiler.h>
+#include <mrs_lib/param_loader.h>
+#include <mrs_lib/profiler.h>
 
 #include <mutex>
 
@@ -96,13 +95,11 @@ void MavrosDiagnostics::onInit() {
 
   ros::Time::waitForValid();
 
-  // --------------------------------------------------------------
-  // |                         parameters                         |
-  // --------------------------------------------------------------
+  // | --------------------- load parameters -------------------- |
 
   mrs_lib::ParamLoader param_loader(nh_, "MavrosDiagnostics");
 
-  param_loader.load_param("version", _version_);
+  param_loader.loadParam("version", _version_);
 
   if (_version_ != VERSION) {
 
@@ -110,43 +107,35 @@ void MavrosDiagnostics::onInit() {
     ros::shutdown();
   }
 
-  param_loader.load_param("enable_profiler", profiler_enabled_);
+  param_loader.loadParam("enable_profiler", profiler_enabled_);
 
-  param_loader.load_param("min_satellites_visible", min_satellites_visible_);
-  param_loader.load_param("min_voltage", min_voltage_);
-  param_loader.load_param("max_cpu_load", max_cpu_load_);
+  param_loader.loadParam("min_satellites_visible", min_satellites_visible_);
+  param_loader.loadParam("min_voltage", min_voltage_);
+  param_loader.loadParam("max_cpu_load", max_cpu_load_);
 
-  // --------------------------------------------------------------
-  // |                         subscribers                        |
-  // --------------------------------------------------------------
+  // | ----------------------- subscribers ---------------------- |
 
   subscriber_diagnostics  = nh_.subscribe("diagnostics_in", 1, &MavrosDiagnostics::callbackDiagnostics, this, ros::TransportHints().tcpNoDelay());
   subscriber_mavros_state = nh_.subscribe("mavros_state_in", 1, &MavrosDiagnostics::callbackMavrosState, this, ros::TransportHints().tcpNoDelay());
   subscriber_simulation_num_satelites =
       nh_.subscribe("num_satelites_in", 1, &MavrosDiagnostics::callbackNumSatellites, this, ros::TransportHints().tcpNoDelay());
 
-  // --------------------------------------------------------------
-  // |                         publishers                         |
-  // --------------------------------------------------------------
+  // | ----------------------- publishers ----------------------- |
 
   publisher_diagnostics = nh_.advertise<mrs_msgs::MavrosDiagnostics>("diagnostics_out", 1);
 
-  // --------------------------------------------------------------
-  // |                          services                          |
-  // --------------------------------------------------------------
+  // | ------------------------ services ------------------------ |
 
   // subscribe for simulating different number of satellites
   service_sim_satellites = nh_.advertiseService("simulate_satellites_visible_in", &MavrosDiagnostics::callbackSimSatellites, this);
 
-  // --------------------------------------------------------------
-  // |                          profiler                          |
-  // --------------------------------------------------------------
+  // | ------------------------ profiler ------------------------ |
 
   profiler = mrs_lib::Profiler(nh_, "MavrosInterface", profiler_enabled_);
 
   // | ----------------------- finish init ---------------------- |
 
-  if (!param_loader.loaded_successfully()) {
+  if (!param_loader.loadedSuccessfully()) {
     ROS_ERROR("[MavrosDiagnostics]: Could not load all parameters!");
     ros::shutdown();
   }
@@ -157,10 +146,6 @@ void MavrosDiagnostics::onInit() {
 }
 
 //}
-
-// --------------------------------------------------------------
-// |                          callbacks                         |
-// --------------------------------------------------------------
 
 // | --------------------- topic callbacks -------------------- |
 
