@@ -143,6 +143,8 @@ void MavrosDiagnostics::onInit() {
   is_initialized = true;
 
   ROS_INFO("[MavrosDiagnostics]: initialized, version %s", VERSION);
+
+  ROS_DEBUG("[MavrosDiagnostics]: debug output is enabled");
 }
 
 //}
