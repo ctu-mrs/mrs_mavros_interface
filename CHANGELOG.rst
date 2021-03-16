@@ -2,6 +2,12 @@
 Changelog for package mrs_mavros_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* updated compilation flags
+* update CI
+* Contributors: Robert Penicka, Tomas Baca, Tomáš Báča, klaxalk, mergify[bot], uav35
+
 0.0.5 (2020-02-26)
 ------------------
 * fixed broken launch file after merge
