@@ -2,7 +2,7 @@
 <package format="2">
 
   <name>mrs_mavros_interface</name>
-  <version>0.0.5</version>
+  <version>0.0.6</version>
   <description>The mrs_main package</description>
 
   <author email="tomas.baca@fel.cvut.cz">Tomas Baca</author>

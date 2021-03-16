@@ -2,8 +2,8 @@
 Changelog for package mrs_mavros_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.6 (2021-03-16)
+------------------
 * updated compilation flags
 * update CI
 * Contributors: Robert Penicka, Tomas Baca, Tomáš Báča, klaxalk, mergify[bot], uav35
