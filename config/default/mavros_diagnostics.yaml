@@ -1,4 +1,4 @@
-version: "0.0.6.0"
+version: "1.0.0.0"
 
 min_satellites_visible: 6
 min_voltage: 10.8 # [V]

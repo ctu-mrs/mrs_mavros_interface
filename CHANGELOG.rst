@@ -2,6 +2,10 @@
 Changelog for package mrs_mavros_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Major release
+
 0.0.6 (2021-03-16)
 ------------------
 * updated compilation flags
