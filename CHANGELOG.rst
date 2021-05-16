@@ -2,6 +2,13 @@
 Changelog for package mrs_mavros_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* version -> 1.0.1
+* updated ros::shutdown
+* updated CI
+* Contributors: Tomas Baca
+
 1.0.0 (2021-03-18)
 ------------------
 * Major release
