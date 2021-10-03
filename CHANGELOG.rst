@@ -2,8 +2,8 @@
 Changelog for package mrs_mavros_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.2 (2021-10-03)
+------------------
 * added brus configs
 * added brus simulation configs
 * updated uav configs
