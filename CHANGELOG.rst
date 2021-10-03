@@ -2,6 +2,14 @@
 Changelog for package mrs_mavros_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* added brus configs
+* added brus simulation configs
+* updated uav configs
+* added t18 configs
+* Contributors: Tomas Baca
+
 1.0.1 (2021-05-16)
 ------------------
 * version -> 1.0.1
