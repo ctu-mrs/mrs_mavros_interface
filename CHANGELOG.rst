@@ -2,8 +2,8 @@
 Changelog for package mrs_mavros_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.3 (2022-05-09)
+------------------
 * + install in cmakelists
 * add configs: simulation/naki
 * Contributors: Pavel Petracek, Tomas Baca
